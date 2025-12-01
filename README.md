@@ -27,7 +27,8 @@ Guarda el archivo (Ctrl + S).
 2. Creación del Entorno Docker
 Ejecuta el siguiente comando en PowerShell para levantar el contenedor Ubuntu mapeando la carpeta actual:
 PowerShell
-docker run -it --name ubuntu-dev -p 8080:8080 -p 8081:8081 -p 5147:5147 -p 3306:3306 -v "${PWD}:/workspace" ubuntu:22.04 bash
+docker run -it --name ubuntu-dev -p 8080:8080 -p 8081:8081 -p 5147:5147 -p 3306:3306 -v "${PWD}:/workspace" ubuntu:22.04 bash (Windows)
+docker run -it --name ubuntu-dev -p 8080:8080 -p 8081:8081 -p 5147:5147 -p 3306:3306 -v "$(pwd):/workspace" ubuntu:22.04 bash (Ubuntu) 
 
 Nota: Si el contenedor ya existe, usa docker start -ai ubuntu-dev. Una vez dentro, el prompt cambiará a root@....
 
