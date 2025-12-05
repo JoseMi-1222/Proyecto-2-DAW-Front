@@ -1,42 +1,54 @@
 <template>
   <div class="app-container">
-    <Menu v-if="showMenu && auth.logueado" />
+    
+    <div v-if="showMenu" class="layout-menu">
+      <Menu />
+    </div>
+
     <main class="main-content">
       <router-view />
     </main>
-    <Footer v-if="showMenu && auth.logueado" />
+    
+    <Footer v-if="showMenu" />
   </div>
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
 import { computed } from 'vue'
-import { useAuthStore } from './stores/auth'
+import { useRoute } from 'vue-router'
+// import { useAuthStore } from './stores/auth' // Comentado para la prueba
 
-import Menu from './components/Menu.vue'
+import Menu from './components/Menu.vue' 
 import Footer from './components/Footer.vue'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
 const route = useRoute()
-const auth = useAuthStore()
+// const auth = useAuthStore() // Comentado para la prueba
 
+// Solo ocultar en login, mostrar en todo lo demás
 const showMenu = computed(() => route.path !== '/login')
 </script>
 
 <style>
-/* Layout principal */
+/* Reset básico */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: #f8f9fa;
+}
+
 .app-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
-/* Contenido principal que crece */
+/* IMPORTANTE: 
+   Como la barra negra es 'fixed-top', flota sobre el contenido.
+   Necesitamos empujar el contenido hacia abajo 70px o se quedará escondido detrás.
+*/
 .main-content {
   flex: 1;
-}
-body{
-  overflow: auto !important;
+  padding-top: 70px; 
 }
 </style>
