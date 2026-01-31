@@ -73,13 +73,21 @@
           <span class="me-2">🏠</span> Inicio
         </button>
 
-        <button class="btn btn-menu text-start" @click="navegar('/mis-ausencias')">
-          <span class="me-2">📅</span> Ausencias
+        <button 
+          v-if="!esAdmin" 
+          class="btn btn-menu text-start" 
+          @click="navegar('/mis-ausencias')"
+        >
+          <span class="me-2">📅</span> Mis Ausencias
         </button>
 
-        <div v-if="auth.usuario?.rol === 'administrador'" class="mt-3 border-top border-secondary pt-3">
+        <div v-if="esAdmin" class="mt-3 border-top border-secondary pt-3">
            <small class="text-muted text-uppercase fw-bold ms-2 mb-2 d-block">Administración</small>
            
+           <button class="btn btn-menu text-start text-warning" @click="navegar('/admin/ausencias')">
+             <span class="me-2">🛡️</span> Control Global Ausencias
+           </button>
+
            <button class="btn btn-menu text-start" @click="abrirArchivoSelec">
              <span class="me-2">📤</span> Subir archivo de datos
            </button>
@@ -107,12 +115,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import adminService from '../services/adminService'
 import { Offcanvas } from 'bootstrap'
-import modalmensaje from '../components/ModalMensaje.vue' // Recuperamos el modal
+import modalmensaje from '../components/ModalMensaje.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -123,6 +131,13 @@ const dropdownAbierto = ref(false)
 const cargando = ref(false)
 const fileInput = ref(null)
 
+// Computed para saber si es admin de forma limpia
+// Ajusta 'ROLE_ADMINISTRADOR' o 'administrador' según cómo venga de tu Java
+const esAdmin = computed(() => {
+  const rol = auth.usuario?.rol || ''
+  return rol.toUpperCase() === 'ADMINISTRADOR' || rol.toUpperCase() === 'ROLE_ADMINISTRADOR'
+})
+
 // Variables Modal
 const modalVisible = ref(false)
 const modalTitulo = ref('')
@@ -130,16 +145,13 @@ const modalMensaje = ref('')
 const modalTipo = ref('info')
 
 onMounted(() => {
-  // Inicializar Menú Lateral
   const sidebarEl = document.getElementById('sidePanel')
   if(sidebarEl) {
     bsOffcanvas = new Offcanvas(sidebarEl)
   }
   
-  // Evento para cerrar dropdown al clicar fuera
   document.addEventListener('click', cerrarDropdownAlClickeoFuera)
 
-  // Verificar mensajes pendientes tras recarga
   if (localStorage.getItem('mostrarModalImportacion') === '1') {
     mostrarModal('Importación exitosa', 'Archivo importado correctamente.', 'success')
     localStorage.removeItem('mostrarModalImportacion')
@@ -150,7 +162,7 @@ onUnmounted(() => {
   document.removeEventListener('click', cerrarDropdownAlClickeoFuera)
 })
 
-// --- FUNCIONES MENÚ LATERAL ---
+// --- FUNCIONES NAVEGACIÓN ---
 function abrirMenuLateral() {
   if(bsOffcanvas) bsOffcanvas.show()
 }
@@ -163,7 +175,6 @@ function navegar(ruta) {
   }, 350)
 }
 
-// --- FUNCIONES MENÚ USUARIO ---
 function toggleUsuarioDropdown() {
   dropdownAbierto.value = !dropdownAbierto.value
 }
@@ -180,10 +191,8 @@ function logout() {
   router.push('/login')
 }
 
-// --- LÓGICA DE ADMINISTRADOR (RECUPERADA) ---
-
+// --- FUNCIONES ADMIN ---
 function abrirArchivoSelec() {
-  // Cerramos el menú para que se vea el diálogo de archivo
   if(bsOffcanvas) bsOffcanvas.hide()
   if (fileInput.value) {
     fileInput.value.value = ''
@@ -263,10 +272,14 @@ function cerrarModal() {
   width: 100%;
   border-radius: 5px;
   transition: background 0.2s;
-  text-align: left; /* Asegura alineación a la izquierda */
+  text-align: left;
 }
 .btn-menu:hover {
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
+}
+/* Estilo especial para el botón del admin */
+.text-warning {
+  color: #ffc107 !important;
 }
 </style>

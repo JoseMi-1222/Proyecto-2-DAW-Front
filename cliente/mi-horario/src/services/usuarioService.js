@@ -28,10 +28,13 @@ export default {
     return response.data
   },
 
-  async cambiarContrasena(idUsuario, nuevaContrasena) {
-    const response = await api.put(`/usuarios/${idUsuario}/cambiar-contraseña`, {
-      nuevaContraseña: nuevaContrasena
-    })
+  async cambiarContrasena(idUsuario, contrasenaActual, nuevaContrasena) {
+    const payload = {
+      contrasenaActual: contrasenaActual,
+      nuevaContrasena: nuevaContrasena    
+    }
+    
+    const response = await api.put(`/usuarios/${idUsuario}/cambiar-contrasena`, payload)
     return response.data
   },
 

@@ -43,8 +43,8 @@
 
     <TablaAusencias 
       :ausencias="ausenciasOrdenadasFiltradas" 
-      @eliminarDia="eliminarAusencia"
-      @eliminarUna="eliminarAusencia"
+      @eliminarDia="prepararEliminacion"
+      @eliminarUna="prepararEliminacion"
       @justificarDia="justificarAusenciasDia"
     />
 
@@ -57,15 +57,23 @@
     :tipo="modalTipo"
     @cerrar="modalVisible = false" 
   />
+
+  <ModalConfirmacion 
+    :visible="mostrarConfirmacion"
+    mensaje="¿Seguro que quieres eliminar este registro? Esta acción no se puede deshacer."
+    @cerrar="mostrarConfirmacion = false"
+    @confirmar="ejecutarEliminacion"
+  />
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import ausenciaService from '../services/ausenciaService'
-import horarioService from '../services/horarioService' // Necesitamos esto para buscar el ID
+import horarioService from '../services/horarioService'
 import { useAuthStore } from '../stores/auth'
 
 import ModalMensaje from '../components/ModalMensaje.vue'
+import ModalConfirmacion from '../components/ModalConfirmacion.vue' // <--- IMPORTADO
 import MenuLateral from '../components/MenuLateral.vue'
 import FormularioCrearAusencia from '../components/FormularioCrearAusencia.vue'
 import TablaAusencias from '../components/TablaAusencias.vue'
@@ -75,8 +83,12 @@ const auth = useAuthStore()
 // Estado
 const ausencias = ref([])
 const mostrarFormulario = ref(false)
-const idProfesorReal = ref(null) // Aquí guardaremos el ID correcto (116, etc.)
+const idProfesorReal = ref(null)
 const cargandoId = ref(true)
+
+// Estado Confirmación Borrado
+const mostrarConfirmacion = ref(false)
+const itemParaEliminar = ref(null)
 
 // Filtros
 const ausenciasFiltradas = ref([])
@@ -84,13 +96,13 @@ const filtroDia = ref('')
 const filtroMes = ref('')
 const filtroAnio = ref('')
 
-// Modal
+// Modal Mensajes
 const modalVisible = ref(false)
 const modalTitulo = ref('')
 const modalMensaje = ref('')
 const modalTipo = ref('info')
 
-// --- LÓGICA DE INICIO: BUSCAR ID REAL ---
+// --- LÓGICA DE INICIO ---
 onMounted(async () => {
   if (!auth.usuario?.email) {
     mostrarModal('Error', 'No hay usuario logueado', 'error')
@@ -98,62 +110,61 @@ onMounted(async () => {
   }
 
   try {
-    // 1. Primero buscamos el ID de profesor usando el email del usuario logueado
-    // Nota: Asegúrate de que 'obtenerIdProfesorPorEmail' devuelve el objeto profesor o el ID directamente.
-    // Si tu backend devuelve el objeto entero del profesor, ajusta aquí:
     const dataProfesor = await horarioService.obtenerIdProfesorPorEmail(auth.usuario.email)
-    
-    // Asumimos que dataProfesor es el objeto Profesor completo o tiene el idProfesor
     idProfesorReal.value = dataProfesor.idProfesor || dataProfesor.id || dataProfesor
 
-    console.log("👨‍🏫 Profesor identificado:", idProfesorReal.value)
-
-    // 2. Ahora que tenemos el ID correcto, cargamos sus ausencias
     cargarAusencias()
-
   } catch (error) {
     console.error(error)
-    mostrarModal('Error', 'No se pudo identificar el perfil de profesor de este usuario.', 'error')
+    mostrarModal('Error', 'No se pudo identificar el perfil de profesor.', 'error')
   } finally {
     cargandoId.value = false
   }
 })
 
-// --- CARGA DE AUSENCIAS ---
+// --- CARGA DE DATOS ---
 const cargarAusencias = async () => {
   if (!idProfesorReal.value) return
 
   try {
-    // IMPORTANTE: Aquí usamos el ID del USUARIO para las ausencias si tu backend lo pide así,
-    // o el ID del PROFESOR si lo pide así. 
-    // Por lo general, 'obtenerAusencias' usa idUsuario. Mantengamos auth.usuario.id si el endpoint pide ?idusuario=
-    // Si el endpoint pide ?idProfesor=, usa idProfesorReal.value.
-    
-    // Según tu código anterior: api/ausencias?idusuario=${props.idUsuario}
     const data = await ausenciaService.obtenerAusencias(auth.usuario.id)
-    
     ausencias.value = data
     ausenciasFiltradas.value = [...ausencias.value]
     if(filtroDia.value || filtroMes.value || filtroAnio.value) filtrarPorFechaAvanzado()
-
   } catch (error) {
     console.error('Error cargando ausencias:', error)
   }
 }
 
-// --- ELIMINAR / JUSTIFICAR ---
-const eliminarAusencia = async ({ id = null, fecha = null }) => {
-  if (!confirm('¿Seguro que quieres eliminar?')) return
+// --- LÓGICA DE ELIMINACIÓN CON MODAL ---
+
+// 1. Se llama desde la tabla al pulsar la papelera
+const prepararEliminacion = ({ id = null, fecha = null }) => {
+  // Guardamos qué queremos borrar y mostramos el modal
+  itemParaEliminar.value = { id, fecha }
+  mostrarConfirmacion.value = true
+}
+
+// 2. Se llama cuando el usuario confirma en el modal
+const ejecutarEliminacion = async () => {
+  mostrarConfirmacion.value = false // Cerramos modal confirmación
+  
+  if (!itemParaEliminar.value) return
+
+  const { id, fecha } = itemParaEliminar.value
+
   try {
-    // Usamos el ID de profesor correcto
     await ausenciaService.eliminarAusencia(id, fecha, idProfesorReal.value)
     await cargarAusencias()
     mostrarModal('Éxito', 'Eliminado correctamente', 'success')
   } catch (error) {
     mostrarModal('Error', 'No se pudo eliminar', 'error')
+  } finally {
+    itemParaEliminar.value = null
   }
 }
 
+// --- JUSTIFICAR ---
 const justificarAusenciasDia = async (fecha) => {
   try {
     await ausenciaService.justificarDia(fecha, idProfesorReal.value)

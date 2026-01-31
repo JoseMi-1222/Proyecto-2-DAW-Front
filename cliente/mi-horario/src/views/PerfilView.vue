@@ -1,20 +1,30 @@
 <template>
   <div class="container mt-5 pt-5">
 
-    <div class="card p-4 shadow">
-      <div class="d-flex align-items-center mb-3">
-        <img
-          :src="imagenPerfil || imagenPorDefecto"
-          class="rounded-circle me-3"
-          style="width: 64px; height: 64px; object-fit: cover;"
-        />
-        <strong>{{ auth.usuario.nombre }}</strong>
+    <div class="card p-4 shadow border-0" style="max-width: 500px; margin: auto;">
+      <div class="d-flex align-items-center mb-4">
+        <div class="position-relative">
+          <img
+            :src="imagenPerfil || imagenPorDefecto"
+            class="rounded-circle me-3 border"
+            style="width: 80px; height: 80px; object-fit: cover;"
+          />
+          <label 
+            for="inputFotoPerfil" 
+            class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+            style="width: 30px; height: 30px; cursor: pointer; right: 15px !important;"
+            title="Cambiar foto"
+          >
+            <i class="bi bi-camera-fill" style="font-size: 0.8rem;"></i>
+          </label>
+        </div>
+        
+        <div>
+          <h4 class="mb-0">{{ auth.usuario?.nombre }}</h4>
+          <small class="text-muted">{{ auth.usuario?.email }}</small>
+        </div>
       </div>
 
-      <!-- Subir imagen -->
-      <label for="inputFotoPerfil" class="btn btn-outline-secondary mb-3" style="cursor: pointer;">
-        Subir nueva foto de perfil
-      </label>
       <input
         id="inputFotoPerfil"
         type="file"
@@ -23,39 +33,110 @@
         style="display: none;"
       />
 
-      <!-- Cambiar contraseña -->
-      <div v-if="errorPassword" class="text-danger mb-2">{{ errorPassword }}</div>
-      <input v-model="nuevaPassword" type="password" class="form-control mb-2" placeholder="Nueva contraseña" />
-      <input v-model="confirmacionPassword" type="password" class="form-control mb-3" placeholder="Confirmar contraseña" />
-      <button class="btn btn-primary w-100 mb-3" @click="cambiarPassword">Cambiar contraseña</button>
+      <hr class="my-4">
 
-      <!-- Logout -->
-      <button class="btn btn-outline-danger w-100" @click="logout">Cerrar sesión</button>
+      <h5 class="mb-3"><i class="bi bi-shield-lock me-2"></i>Seguridad</h5>
+      
+      <form @submit.prevent="cambiarPassword">
+        <div class="mb-3">
+          <label class="form-label small text-muted">Contraseña actual</label>
+          <input 
+            v-model="passwordActual" 
+            type="password" 
+            class="form-control" 
+            placeholder="INtroduce tu contraseña actual" 
+          />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small text-muted">Nueva contraseña</label>
+          <input 
+            v-model="nuevaPassword" 
+            type="password" 
+            class="form-control" 
+            placeholder="Mínimo 6 caracteres" 
+          />
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small text-muted">Confirmar contraseña</label>
+          <input 
+            v-model="confirmacionPassword" 
+            type="password" 
+            class="form-control" 
+            placeholder="Repite la nueva contraseña" 
+          />
+        </div>
+
+        <button 
+          type="submit"
+          class="btn btn-primary w-100 mb-3" 
+          :disabled="!formularioValido || cargando"
+        >
+          <span v-if="cargando" class="spinner-border spinner-border-sm me-2"></span>
+          {{ cargando ? 'Actualizando...' : 'Actualizar contraseña' }}
+        </button>
+      </form>
+
+      <button class="btn btn-outline-danger w-100" @click="logout">
+        <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
+      </button>
     </div>
   </div>
+
+  <ModalMensaje 
+    :visible="modal.visible" 
+    :titulo="modal.titulo" 
+    :mensaje="modal.mensaje" 
+    :tipo="modal.tipo"
+    @cerrar="modal.visible = false" 
+  />
+
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import usuarioService from '../services/usuarioService'
+import ModalMensaje from '../components/ModalMensaje.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 
+// Estados básicos
 const imagenPerfil = ref(null)
 const imagenPorDefecto = 'https://img.freepik.com/vector-premium/icono-usuario-avatar-perfil-usuario-icono-persona-imagen-perfil-silueta-neutral-genero-adecuado_697711-1132.jpg'
+const cargando = ref(false)
 
+// Estados Password
+const passwordActual = ref('')
 const nuevaPassword = ref('')
 const confirmacionPassword = ref('')
-const errorPassword = ref('')
+
+// Estado Modal
+const modal = ref({ visible: false, titulo: '', mensaje: '', tipo: 'info' })
+
+// --- UTILIDAD MODAL ---
+const mostrarModal = (titulo, mensaje, tipo = 'info') => {
+  modal.value = { visible: true, titulo, mensaje, tipo }
+}
+
+// Validación
+const formularioValido = computed(() => {
+  return passwordActual.value.length > 0 && 
+         nuevaPassword.value.length >= 6 && 
+         nuevaPassword.value === confirmacionPassword.value
+})
+
+// --- FUNCIONES ---
 
 function logout() {
   auth.logout()
   router.push('/login')
 }
 
+// Subir Imagen
 function subirImagen(event) {
   const archivo = event.target.files[0]
   if (!archivo) return
@@ -63,16 +144,18 @@ function subirImagen(event) {
   const formData = new FormData()
   formData.append('imagen', archivo)
 
+  cargando.value = true
   usuarioService
     .subirImagen(auth.usuario.id, formData)
     .then(() => {
-      alert('Imagen subida con éxito')
+      mostrarModal('Foto actualizada', 'success')
       cargarImagenConToken()
     })
     .catch(err => {
       console.error(err)
-      alert('Error al subir la imagen')
+      mostrarModal('Error', 'No se pudo subir la imagen.', 'error')
     })
+    .finally(() => cargando.value = false)
 }
 
 async function cargarImagenConToken() {
@@ -80,36 +163,36 @@ async function cargarImagenConToken() {
     const dataUrl = await usuarioService.obtenerImagenDataUrl(auth.usuario.id)
     imagenPerfil.value = dataUrl || imagenPorDefecto
   } catch (error) {
-    console.warn('No se encontró imagen. Usando imagen por defecto.')
     imagenPerfil.value = imagenPorDefecto
   }
 }
 
+// CAMBIAR PASSWORD Y CERRAR SESIÓN
 async function cambiarPassword() {
-  errorPassword.value = ''
-
-  if (!nuevaPassword.value || nuevaPassword.value.length < 6) {
-    errorPassword.value = 'La contraseña debe tener al menos 6 caracteres'
-    return
-  }
-
-  if (nuevaPassword.value !== confirmacionPassword.value) {
-    errorPassword.value = 'Las contraseñas no coinciden'
-    return
-  }
+  cargando.value = true
 
   try {
-    await usuarioService.cambiarContrasena(auth.usuario.id, nuevaPassword.value)
+    await usuarioService.cambiarContrasena(
+      auth.usuario.id, 
+      passwordActual.value, 
+      nuevaPassword.value
+    )
 
-    auth.usuario.cambiarContraseña = false
-    localStorage.setItem('usuario', JSON.stringify(auth.usuario))
-
-    alert('Contraseña cambiada correctamente')
-    nuevaPassword.value = ''
-    confirmacionPassword.value = ''
+    // 1. Mostrar Modal de Éxito
+    mostrarModal('Contraseña Actualizada', 'success')
+    
+    // 2. Esperar 2 segundos para que el usuario lea el mensaje y luego Logout
+    setTimeout(() => {
+      logout() // Llamamos a la función logout que definimos arriba
+    }, 2500)
+    
   } catch (err) {
-    errorPassword.value = 'Error al cambiar la contraseña'
     console.error(err)
+    // Mostrar error en el modal
+    const msg = err.response?.data?.error || err.response?.data?.mensaje || 'La contraseña actual no es correcta.'
+    mostrarModal('Error', msg, 'error')
+  } finally {
+    cargando.value = false
   }
 }
 
@@ -117,10 +200,3 @@ onMounted(() => {
   cargarImagenConToken()
 })
 </script>
-
-<style scoped>
-.card {
-  max-width: 500px;
-  margin: auto;
-}
-</style>

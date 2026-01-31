@@ -1,9 +1,14 @@
-import api from '../axios'; // O tu importación de axios configurada
+import api from '../axios'; 
 
 export default {
     // Obtener ausencias de un usuario
     obtenerAusencias(idUsuario) {
         return api.get(`/ausencias?idusuario=${idUsuario}`).then(res => res.data);
+    },
+
+    // Obtener TODAS las ausencias (Solo Admin)
+    obtenerTodasLasAusencias() {
+        return api.get('/ausencias/todas').then(res => res.data);
     },
 
     // Crear una nueva ausencia
