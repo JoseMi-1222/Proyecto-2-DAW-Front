@@ -33,10 +33,8 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import axios from 'axios'
-import { useAuthStore } from '../stores/auth'
+import usuarioService from '../services/usuarioService'
 
-const auth = useAuthStore()
 const imagenProfesor = ref(null)
 const inputArchivo = ref(null)
 
@@ -76,22 +74,7 @@ async function cargarImagenProfesor() {
   }
 
   try {
-    const response = await axios.get(
-      `http://localhost:8081/api/usuarios/${id}/imagen`,
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`
-        },
-        responseType: 'arraybuffer',
-        validateStatus: status => status === 200
-      }
-    )
-
-    const tipo = response.headers['content-type'] || 'image/jpeg'
-    const base64 = btoa(
-      new Uint8Array(response.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    )
-    imagenProfesor.value = `data:${tipo};base64,${base64}`
+    imagenProfesor.value = await usuarioService.obtenerImagenDataUrl(id)
   } catch {
     imagenProfesor.value = null
   }
@@ -117,15 +100,7 @@ async function subirImagenProfesor(event) {
   formData.append('imagen', archivo)
 
   try {
-    await axios.post(
-      `http://localhost:8081/api/usuarios/${props.profesor.usuario.id}/imagen`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`
-        }
-      }
-    )
+    await usuarioService.subirImagen(props.profesor.usuario.id, formData)
     alert(' Imagen actualizada')
     cargarImagenProfesor()
     emit('imagenSubida') //  Dispara recarga en el padre

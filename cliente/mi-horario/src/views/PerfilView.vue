@@ -39,7 +39,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import axios from 'axios'
+import usuarioService from '../services/usuarioService'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -63,41 +63,22 @@ function subirImagen(event) {
   const formData = new FormData()
   formData.append('imagen', archivo)
 
-  axios.post(
-    `http://localhost:8081/api/usuarios/${auth.usuario.id}/imagen`,
-    formData,
-    {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
-    }
-  ).then(() => {
-    alert('Imagen subida con éxito')
-    cargarImagenConToken()
-  }).catch(err => {
-    console.error(err)
-    alert('Error al subir la imagen')
-  })
+  usuarioService
+    .subirImagen(auth.usuario.id, formData)
+    .then(() => {
+      alert('Imagen subida con éxito')
+      cargarImagenConToken()
+    })
+    .catch(err => {
+      console.error(err)
+      alert('Error al subir la imagen')
+    })
 }
 
 async function cargarImagenConToken() {
   try {
-    const response = await axios.get(
-      `http://localhost:8081/api/usuarios/${auth.usuario.id}/imagen`,
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`
-        },
-        responseType: 'arraybuffer',
-        validateStatus: status => status === 200
-      }
-    )
-
-    const tipo = response.headers['content-type'] || 'image/jpeg'
-    const base64 = btoa(
-      new Uint8Array(response.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    )
-    imagenPerfil.value = `data:${tipo};base64,${base64}`
+    const dataUrl = await usuarioService.obtenerImagenDataUrl(auth.usuario.id)
+    imagenPerfil.value = dataUrl || imagenPorDefecto
   } catch (error) {
     console.warn('No se encontró imagen. Usando imagen por defecto.')
     imagenPerfil.value = imagenPorDefecto
@@ -118,13 +99,7 @@ async function cambiarPassword() {
   }
 
   try {
-    await axios.put(
-      `http://localhost:8081/api/usuarios/${auth.usuario.id}/cambiar-contraseña`,
-      { nuevaContraseña: nuevaPassword.value },
-      {
-        headers: { Authorization: `Bearer ${auth.token}` }
-      }
-    )
+    await usuarioService.cambiarContrasena(auth.usuario.id, nuevaPassword.value)
 
     auth.usuario.cambiarContraseña = false
     localStorage.setItem('usuario', JSON.stringify(auth.usuario))

@@ -53,7 +53,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import horarioService from '../services/horarioService'
 
 const props = defineProps({
   idProfesor: { type: [Number, String], default: null },
@@ -114,19 +114,14 @@ async function cargarHorario() {
 
   cargando.value = true
   try {
-    let url = 'http://localhost:8081/api/horarios'
-    if (effectiveIdProfesor.value) {
-      url += `?idProfesor=${effectiveIdProfesor.value}`
-    }
-    
-    const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
+    const data = await horarioService.obtenerHorarios(
+      effectiveIdProfesor.value ? effectiveIdProfesor.value : null
+    )
     
     const diaMap = { L: 'Lunes', M: 'Martes', X: 'Miércoles', J: 'Jueves', V: 'Viernes' }
     
     // Mapeo directo sin filtros extraños
-    horario.value = response.data.map(item => ({ 
+    horario.value = data.map(item => ({ 
       ...item, 
       dia: diaMap[item.dia] || item.dia 
     }))

@@ -45,7 +45,8 @@ import { useRouter } from 'vue-router'
 
 
 import { ref, onMounted, watch } from 'vue'
-import axios from 'axios'
+import profesorService from '../services/profesorService'
+import usuarioService from '../services/usuarioService'
 
 const busqueda = ref('')
 const resultados = ref([])
@@ -120,15 +121,7 @@ async function buscarProfesores() {
   }
 
   try {
-    const response = await axios.get(
-      `http://localhost:8081/api/profesores/buscar?nombre=${encodeURIComponent(busqueda.value)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    )
-    resultados.value = response.data
+    resultados.value = await profesorService.buscarProfesoresPorNombre(busqueda.value)
   } catch (error) {
     console.error('Error al buscar profesores:', error)
   }
@@ -137,13 +130,7 @@ async function buscarProfesores() {
 // Obtener todos los profesores
 async function obtenerTodosLosProfesores() {
   try {
-    const response = await axios.get('http://localhost:8081/api/profesores', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-    // console.log('📚 Todos los profesores:', response.data)
-    resultados.value = response.data
+    resultados.value = await profesorService.obtenerProfesores()
   } catch (error) {
     console.error('Error al obtener profesores:', error)
   }
@@ -177,18 +164,8 @@ async function guardarUsuario(datosFormulario) {
   isLoading.value = true;
 
   try {
-    const response = await axios.post(
-      `http://localhost:8081/api/usuarios/crear-con-profesor/${idProfesor}`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    console.log("Respuesta del servidor:", response);
+    const data = await usuarioService.crearConProfesor(idProfesor, payload);
+    console.log("Respuesta del servidor:", data);
     mostrarModal(' Usuario creado', `Se ha vinculado correctamente a ${nombre}`, 'success');
     profesorSeleccionado.value = null;
     obtenerTodosLosProfesores();
@@ -222,11 +199,7 @@ async function eliminarUsuario(profesor) {
   if (!confirm(`¿Estás seguro de eliminar el usuario vinculado a ${profesor.nombre}?`)) return
 
   try {
-    await axios.delete(`http://localhost:8081/api/usuarios/${profesor.usuario.id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
+    await usuarioService.eliminar(profesor.usuario.id)
 
     mostrarModal(' Usuario eliminado', `El usuario de ${profesor.nombre} ha sido eliminado.`, 'success')
     obtenerTodosLosProfesores()
@@ -262,18 +235,8 @@ async function modificarUsuario(datosFormulario) {
   isLoading.value = true;
 
   try {
-    const response = await axios.put(
-      `http://localhost:8081/api/usuarios/${idUsuario}`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    console.log("Respuesta del servidor:", response);
+    const data = await usuarioService.actualizar(idUsuario, payload);
+    console.log("Respuesta del servidor:", data);
     mostrarModal(' Usuario modificado', `Se ha modificado correctamente a ${nombre}`, 'success');
     profesorSeleccionado.value = null;
     obtenerTodosLosProfesores();

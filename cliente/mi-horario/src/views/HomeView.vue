@@ -59,8 +59,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
 import { useAuthStore } from '../stores/auth'
+import profesorService from '../services/profesorService'
 
 import MenuLateral from '../components/MenuLateral.vue'
 import Horario from '../components/Horario.vue'
@@ -94,10 +94,7 @@ async function cargarYBuscarProfesor() {
   cargandoId.value = true
   try {
     // 1. Cargamos todos los profesores
-    const response = await axios.get('http://localhost:8081/api/profesores', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-    listaProfesores.value = response.data
+    listaProfesores.value = await profesorService.obtenerProfesores()
 
     // 2. Si es profesor, buscamos cuál es "su" ficha en la lista
     if (!esAdmin.value && auth.usuario) {

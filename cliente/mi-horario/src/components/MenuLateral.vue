@@ -110,7 +110,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import axios from 'axios' // Recuperamos axios
+import adminService from '../services/adminService'
 import { Offcanvas } from 'bootstrap'
 import modalmensaje from '../components/ModalMensaje.vue' // Recuperamos el modal
 
@@ -201,15 +201,7 @@ function subirArchivoSelec(event) {
     cargando.value = true
 
     try {
-      const response = await axios.post('http://localhost:8081/api/horarios/importacion', 
-        { file: base64File }, 
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      )
+      await adminService.importarHorariosDesdeBase64(base64File)
       mostrarModal('Importación exitosa', 'Datos importados correctamente', 'success')
     } catch (error) {
       console.error(error)
@@ -226,11 +218,7 @@ async function generarParteDiario() {
   cargando.value = true
   
   try {
-    const response = await axios.get('http://localhost:8081/api/parte-ausencias', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-
-    const base64PDF = response.data
+    const base64PDF = await adminService.generarParteAusencias()
     const byteCharacters = atob(base64PDF)
     const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i))
     const byteArray = new Uint8Array(byteNumbers)

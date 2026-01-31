@@ -79,7 +79,7 @@
   <script setup>
   import { ref, onMounted } from 'vue'
   import { useRoute } from 'vue-router'
-  import axios from 'axios'
+  import profesorService from '../services/profesorService'
   import Horario from '../components/Horario.vue'
   
   const route = useRoute()
@@ -88,12 +88,7 @@
   onMounted(async () => {
     const id = route.params.id
     try {
-      const response = await axios.get(`http://localhost:8081/api/profesores/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      profesor.value = response.data
+      profesor.value = await profesorService.obtenerProfesor(id)
     } catch (error) {
       console.error('Error al obtener el profesor:', error)
     }

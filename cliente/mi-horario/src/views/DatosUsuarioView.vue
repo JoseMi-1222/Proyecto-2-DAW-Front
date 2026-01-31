@@ -2,9 +2,6 @@
     <MenuLateral />
 
     <div class="container-xl mt-5 pt-4 px-3">
-        <!-- Contenedor principal con margen horizontal -->
-
-        <!-- Perfil -->
         <div class="mt-4 d-flex flex-column align-items-center">
             <input type="file" accept="image/*" ref="inputArchivo" @change="subirImagen" style="display: none;" />
 
@@ -17,7 +14,6 @@
             <p v-if="profesor?.usuario"><strong>Email:</strong> {{ profesor.usuario.email }}</p>
         </div>
 
-        <!-- Botones -->
         <div class="mt-5 text-center " v-if="profesor">
             <button class="btn btn-secondary me-2" @click="mostrarFormulario('edit')" v-if="profesor?.usuario">Editar
                 Usuario</button>
@@ -27,7 +23,6 @@
             </div>
         </div>
 
-        <!-- Formulario -->
         <div class="mt-3 d-flex justify-content-center">
             <FormularioCrearUsuario v-if="formularioActivo === 'create'" :profesor="profesor"
                 :errores="erroresFormulario" :isLoading="isLoading" @guardar="guardarUsuario" />
@@ -35,46 +30,52 @@
                 :errores="erroresFormulario" :isLoading="isLoading" @actualizar="modificarUsuario" />
         </div>
 
-        <!-- Horario -->
         <div class="mt-5">
             <Horario :idProfesor="profesor?.idProfesor" />
 
-            <!-- Botón para mostrar el formulario de ausencia -->
             <div class="text-center mt-4 mb-3">
                 <button class="btn btn-outline-warning" @click="mostrarFormularioAusencia = !mostrarFormularioAusencia">
                     {{ mostrarFormularioAusencia ? 'Cancelar' : 'Crear Ausencia' }}
                 </button>
             </div>
 
-
             <FormularioCrearAusencia v-if="mostrarFormularioAusencia" :idProfesor="profesor?.idProfesor"
                 @ausenciaCreada="onAusenciaCreada" @error="mensaje => mostrarModal(' Error', mensaje, 'error')" />
 
-            <AusenciasProfesor v-if="profesor?.usuario?.id" :idUsuario="profesor.usuario.id" :key="ausenciasKey" />
+            <div v-if="profesor?.usuario?.id">
+                 <h4 class="mt-4 mb-3">Ausencias Registradas</h4>
+                 <TablaAusencias 
+                    :ausencias="ausenciasOrdenadas" 
+                    @eliminarDia="eliminarAusencia"
+                    @eliminarUna="eliminarAusencia"
+                    @justificarDia="justificarAusenciasDia"
+                 />
+            </div>
 
         </div>
     </div>
 
-    <!-- Modal -->
     <ModalMensaje :visible="modal.visible" :titulo="modal.titulo" :mensaje="modal.mensaje" :tipo="modal.tipo"
         @cerrar="modal.visible = false" />
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue' // Added computed and watch
 import { useRoute } from 'vue-router'
-import axios from 'axios'
 import MenuLateral from '../components/MenuLateral.vue'
 import Horario from '../components/Horario.vue'
 import ModalMensaje from '../components/ModalMensaje.vue'
-import AusenciasProfesor from '../components/AusenciasProfesor.vue'
+// Removed import AusenciasProfesor from '../components/AusenciasProfesor.vue'
+import TablaAusencias from '../components/TablaAusencias.vue' // Added import
 import FormularioCrearUsuario from '../components/FormularioCrearUsuario.vue'
 import FormularioEditarUsuario from '../components/FormularioEditarUsuario.vue'
 import FormularioCrearAusencia from '../components/FormularioCrearAusencia.vue'
+import ausenciaService from '../services/ausenciaService' // Added import
+import profesorService from '../services/profesorService'
+import usuarioService from '../services/usuarioService'
 
 const route = useRoute()
 const idProfesor = route.params.id
-
 
 const profesor = ref(null)
 const imagenPerfil = ref(null)
@@ -83,6 +84,7 @@ const formularioActivo = ref(null)
 const erroresFormulario = ref({})
 const isLoading = ref(false)
 const ausenciasKey = ref(Date.now())
+const ausencias = ref([]) // Added to store absences
 
 const imagenPorDefecto = 'https://img.freepik.com/vector-premium/icono-usuario-avatar-perfil-usuario-icono-persona-imagen-perfil-silueta-neutral-genero-adecuado_697711-1132.jpg'
 
@@ -95,6 +97,7 @@ const modal = ref({
 
 function mostrarModal(titulo, mensaje, tipo = 'info') {
     modal.value = { visible: true, titulo, mensaje, tipo }
+    if (tipo !== 'error') setTimeout(() => modal.value.visible = false, 3000)
 }
 
 function mostrarFormulario(tipo) {
@@ -104,14 +107,15 @@ function mostrarFormulario(tipo) {
 
 async function obtenerDatosProfesor() {
     try {
-        const response = await axios.get(`http://localhost:8081/api/profesores/${idProfesor}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        })
-        profesor.value = response.data
+        profesor.value = await profesorService.obtenerProfesor(idProfesor)
         if (!profesor.value.usuario || !profesor.value.usuario.imagen) {
             imagenPerfil.value = null  // Limpiar imagen si no hay usuario o imagen
         } else {
             await cargarImagen()
+        }
+        // Load absences if user exists
+        if(profesor.value.usuario?.id) {
+            cargarAusencias(profesor.value.usuario.id)
         }
 
     } catch (error) {
@@ -119,20 +123,67 @@ async function obtenerDatosProfesor() {
     }
 }
 
+// Function to load absences
+async function cargarAusencias(idUsuario) {
+  try {
+    const data = await ausenciaService.obtenerAusencias(idUsuario)
+    ausencias.value = data
+  } catch (error) {
+    console.error('Error al cargar ausencias:', error)
+    mostrarModal('Error', 'No se pudieron cargar las ausencias.', 'error')
+  }
+}
+
+// Computed property for ordered absences
+const ausenciasOrdenadas = computed(() =>
+  [...ausencias.value].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+)
+
+
+// Function to delete absence (Day or Single)
+const eliminarAusencia = async ({ id = null, fecha = null }) => {
+  const idUsuario = profesor.value?.usuario?.id
+    const idProfesorReal = profesor.value?.idProfesor
+  if(!idUsuario) return
+
+  let mensaje = id 
+    ? '¿Estás seguro de eliminar esta hora?' 
+    : '¿Estás seguro de eliminar el día completo?'
+  
+  if (!confirm(mensaje)) return
+
+  try {
+        await ausenciaService.eliminarAusencia(id, fecha, idProfesorReal)
+    await cargarAusencias(idUsuario)
+    mostrarModal('Eliminado', 'Se ha eliminado correctamente.', 'success')
+  } catch (error) {
+    mostrarModal('Error', 'No se pudo eliminar.', 'error')
+  }
+}
+
+// Function to justify absences
+async function justificarAusenciasDia(fecha) {
+  const idUsuario = profesor.value?.usuario?.id
+    const idProfesorReal = profesor.value?.idProfesor
+  if(!idUsuario) return
+
+  if (!confirm(`¿Justificar todas las ausencias de este día?`)) return
+  
+  try {
+        await ausenciaService.justificarDia(fecha, idProfesorReal)
+    await cargarAusencias(idUsuario)
+    mostrarModal('Justificado', 'Día justificado correctamente.', 'success')
+  } catch (error) {
+    mostrarModal('Error', 'No se pudieron justificar.', 'error')
+  }
+}
+
+
 async function cargarImagen() {
     try {
         const idUsuario = profesor.value?.usuario?.id
         if (!idUsuario || !profesor.value.usuario.imagen) return
-
-        const response = await axios.get(`http://localhost:8081/api/usuarios/${idUsuario}/imagen`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-            responseType: 'arraybuffer',
-            validateStatus: status => status === 200
-        })
-
-        const tipo = response.headers['content-type']
-        const base64 = btoa(new Uint8Array(response.data).reduce((data, byte) => data + String.fromCharCode(byte), ''))
-        imagenPerfil.value = `data:${tipo};base64,${base64}`
+        imagenPerfil.value = await usuarioService.obtenerImagenDataUrl(idUsuario)
     } catch {
         imagenPerfil.value = null
     }
@@ -153,14 +204,8 @@ async function subirImagen(event) {
     formData.append('imagen', archivo)
 
     try {
-        const response = await axios.post(`http://localhost:8081/api/usuarios/${idUsuario}/imagen`, formData, {
-            headers: { 
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'multipart/form-data'
-            }
-        })
-        console.log(response)
-        mostrarModal(' Imagen actualizada', response.data, 'success')
+        const data = await usuarioService.subirImagen(idUsuario, formData)
+        mostrarModal(' Imagen actualizada', data, 'success')
         await obtenerDatosProfesor()
 
     } catch (error) {
@@ -188,14 +233,8 @@ async function guardarUsuario(datosFormulario) {
     isLoading.value = true
 
     try {
-        const response = await axios.post(`http://localhost:8081/api/usuarios/crear-con-profesor/${idProfesor}`, payload, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
-            }
-        })
-
-        console.log(' Usuario creado. Respuesta del backend:', response)
+        const data = await usuarioService.crearConProfesor(idProfesor, payload)
+        console.log(' Usuario creado. Respuesta del backend:', data)
         mostrarModal('Usuario creado', `Se ha vinculado correctamente a ${nombre}`, 'success')
         formularioActivo.value = null
         await obtenerDatosProfesor()
@@ -211,6 +250,7 @@ async function guardarUsuario(datosFormulario) {
             const mensaje = error.response.data.mensaje || 'Error correo no valido.'
             mostrarModal(' Error', mensaje, 'error')
         } else {
+            const mensaje = error.response?.data?.mensaje || error.response?.data || 'Error al crear usuario.'
             mostrarModal(' Error', mensaje, 'error')
         }
     } finally {
@@ -230,15 +270,8 @@ async function modificarUsuario(datosFormulario) {
     isLoading.value = true
 
     try {
-        const response = await axios.put(`http://localhost:8081/api/usuarios/${idUsuario}`, payload, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
-            }
-        })
-
-        console.log(' Usuario modificado. Respuesta del backend:', response)
-        console.log('📨 response.data:', response.data)
+        const data = await usuarioService.actualizar(idUsuario, payload)
+        console.log(' Usuario modificado. Respuesta del backend:', data)
 
         mostrarModal(' Usuario modificado', `Se ha modificado correctamente a ${nombre}`, 'success')
         formularioActivo.value = null
@@ -251,7 +284,8 @@ async function modificarUsuario(datosFormulario) {
         if (error.response?.status === 400 && error.response.data) {
             erroresFormulario.value = error.response.data
         } else {
-            mostrarModal(' Error', response.data, 'error')
+            const mensaje = error.response?.data?.mensaje || error.response?.data || 'Error al modificar usuario.'
+            mostrarModal(' Error', mensaje, 'error')
         }
     } finally {
         isLoading.value = false
@@ -271,9 +305,7 @@ async function eliminarUsuario() {
     isLoading.value = true
 
     try {
-        await axios.delete(`http://localhost:8081/api/usuarios/${usuario.id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        })
+        await usuarioService.eliminar(usuario.id)
         mostrarModal(' Usuario eliminado', `El usuario de ${nombre} ha sido eliminado.`, 'success')
         formularioActivo.value = null
         await obtenerDatosProfesor()
@@ -290,7 +322,10 @@ const mostrarFormularioAusencia = ref(false)
 function onAusenciaCreada() {
     mostrarModal(' Ausencia creada', 'La ausencia fue registrada correctamente.', 'success')
     mostrarFormularioAusencia.value = false
-    ausenciasKey.value = Date.now() // fuerza el render del componente AusenciasProfesor
+    // Reload absences after creation
+    if(profesor.value?.usuario?.id) {
+        cargarAusencias(profesor.value.usuario.id)
+    }
 }
 
 

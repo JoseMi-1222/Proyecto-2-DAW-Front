@@ -105,12 +105,12 @@
 </template>
 
 <script setup>
-import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import logo from '../assets/logo_iespsur.jpeg'
 import { ref, onMounted } from 'vue'
 import ModalMensaje from '../components/ModalMensaje.vue'
+import usuarioService from '../services/usuarioService'
 
 const imagenPerfil = ref(null)
 
@@ -153,25 +153,17 @@ function subirImagen(event) {
   const formData = new FormData()
   formData.append('imagen', archivo)
 
-  axios.post(
-    `http://localhost:8081/api/usuarios/${auth.usuario.id}/imagen`,
-    formData,
-    {
-      headers: {
-        Authorization: `Bearer ${auth.token}`
-      }
-    }
-  ).then((response) => {
-    console.log(' Respuesta del backend (imagen subida):', response)
-    console.log('📨 response.data:', response.data)
-
-    mostrarModal('Imagen subida', response.data, 'success')
-    cargarImagenConToken()
-  }).catch(err => {
-    console.error('Error al subir imagen:', err)
-    const mensaje = err.response?.data || 'Error al subir la imagen'
-    mostrarModal('Error', mensaje, 'error')
-  })
+  usuarioService
+    .subirImagen(auth.usuario.id, formData)
+    .then((data) => {
+      mostrarModal('Imagen subida', data, 'success')
+      cargarImagenConToken()
+    })
+    .catch(err => {
+      console.error('Error al subir imagen:', err)
+      const mensaje = err.response?.data || 'Error al subir la imagen'
+      mostrarModal('Error', mensaje, 'error')
+    })
 }
 
 
@@ -180,22 +172,7 @@ const imagenPorDefecto = 'https://img.freepik.com/vector-premium/icono-usuario-a
 
 async function cargarImagenConToken() {
   try {
-    const response = await axios.get(
-      `http://localhost:8081/api/usuarios/${auth.usuario.id}/imagen`,
-      {
-        headers: {
-          Authorization: `Bearer ${auth.token}`
-        },
-        responseType: 'arraybuffer',
-        validateStatus: status => status === 200 // solo acepta 200 como válido
-      }
-    )
-
-    const tipo = response.headers['content-type'] || 'image/jpeg'
-    const base64 = btoa(
-      new Uint8Array(response.data).reduce((data, byte) => data + String.fromCharCode(byte), '')
-    )
-    imagenPerfil.value = `data:${tipo};base64,${base64}`
+    imagenPerfil.value = await usuarioService.obtenerImagenDataUrl(auth.usuario.id)
   } catch (error) {
     console.warn('No se encontró imagen. Usando imagen por defecto.')
     imagenPerfil.value = imagenPorDefecto
@@ -221,15 +198,8 @@ async function cambiarPassword() {
   }
 
   try {
-    const response = await axios.put(
-      `http://localhost:8081/api/usuarios/${auth.usuario.id}/cambiar-contraseña`,
-      { nuevaContraseña: nuevaPassword.value },
-      {
-        headers: { Authorization: `Bearer ${auth.token}` }
-      }
-    )
-
-    console.log('Respuesta del backend:', response.data)
+    const data = await usuarioService.cambiarContrasena(auth.usuario.id, nuevaPassword.value)
+    console.log('Respuesta del backend:', data)
 
     // Actualiza auth si fuera necesario
     auth.usuario.cambiarContraseña = false

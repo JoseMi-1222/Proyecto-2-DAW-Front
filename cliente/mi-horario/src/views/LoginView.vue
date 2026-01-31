@@ -61,7 +61,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import axios from 'axios'
+import authService from '../services/authService'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -97,14 +97,8 @@ async function login() {
 async function enviarCorreo() {
   mensaje.value = ''
   try {
-    const response = await axios.post('http://localhost:8081/api/recuperacion-password', {
-      correoRecuperacion: correo.value
-    })
-
-    console.log(' Respuesta del backend:', response)        // Muestra toda la respuesta
-    console.log('📨 response.data:', response.data)           // Muestra el cuerpo (JSON)
-
-    mensaje.value = response.data
+    const data = await authService.recuperarPassword(correo.value)
+    mensaje.value = data
   } catch (error) {
     console.error(' Error completo:', error)                // Muestra error completo
     console.log('⚠️ error.response:', error.response)         // Info útil del backend

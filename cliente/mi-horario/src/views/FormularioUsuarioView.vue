@@ -26,7 +26,7 @@
   <script setup>
   import { onMounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import axios from 'axios'
+  import profesorService from '../services/profesorService'
   
   import FormularioCrearUsuario from '../components/FormularioCrearUsuario.vue'
   import FormularioEditarUsuario from '../components/FormularioEditarUsuario.vue'
@@ -39,15 +39,7 @@
   
   onMounted(async () => {
   try {
-    const response = await axios.get(
-      `http://localhost:8081/api/profesores/${route.params.id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    )
-    profesor.value = response.data
+    profesor.value = await profesorService.obtenerProfesor(route.params.id)
     console.log('📦 Profesor cargado:', profesor.value)
   } catch (err) {
     console.error(' Error al cargar el profesor', err)
