@@ -17,6 +17,14 @@
       </div>
     </div>
 
+    <transition name="fade">
+      <div v-if="mensajeExito" class="alert alert-success d-flex align-items-center shadow-sm mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+        <div>{{ mensajeExito }}</div>
+        <button type="button" class="btn-close ms-auto" @click="mensajeExito = ''"></button>
+      </div>
+    </transition>
+
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-body p-3 bg-light rounded-top">
         <div class="input-group">
@@ -44,7 +52,7 @@
               <th class="ps-4">Profesor</th>
               <th>Usuario / Email</th>
               <th>Asignaturas</th>
-              <th class="text-end pe-4">Acciones</th>
+              <th class="text-end pe-4" style="min-width: 150px;">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -77,15 +85,23 @@
                    <span v-for="(asig, i) in obtenerAsignaturasUnicas(prof.horarios)" :key="i" class="badge bg-light text-dark border">{{ asig }}</span>
                 </div>
               </td>
+              
               <td class="text-end pe-4">
-                <button class="btn btn-sm btn-light text-primary me-2" @click="abrirModalEditar(prof)">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-sm btn-light text-danger" @click="confirmarBorrado(prof)">
-                  <i class="bi bi-trash"></i>
-                </button>
+                <div class="d-flex justify-content-end gap-2">
+                  <button class="btn btn-sm btn-light text-dark" title="Gestionar Horario" @click="abrirHorario(prof)">
+                    <i class="bi bi-calendar3"></i>
+                  </button>
+                  
+                  <button class="btn btn-sm btn-light text-primary" title="Editar Datos" @click="abrirModalEditar(prof)">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  
+                  <button class="btn btn-sm btn-light text-danger" title="Eliminar" @click="confirmarBorrado(prof)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
               </td>
-            </tr>
+              </tr>
           </tbody>
         </table>
       </div>
@@ -103,7 +119,7 @@
       :visible="mostrarModalProfe"
       :profesorAEditar="profesorSeleccionado"
       @cerrar="cerrarModalProfe"
-      @guardar-exito="recargarLista"
+      @guardar-exito="manejarExito"
     />
 
     <ModalConfirmacion 
@@ -116,7 +132,14 @@
     <ModalAsignarUsuario 
       :visible="mostrarModalUsuario"
       @cerrar="mostrarModalUsuario = false"
-      @guardar-exito="recargarLista"
+      @guardar-exito="manejarExito"
+    />
+
+    <ModalHorario 
+      :visible="mostrarModalHorario" 
+      :profesor="profesorHorarioSeleccionado"
+      @cerrar="mostrarModalHorario = false"
+      @guardar-exito="manejarExito"
     />
 
   </div>
@@ -128,7 +151,8 @@ import profesorService from '../services/profesorService'
 import MenuLateral from '../components/MenuLateral.vue'
 import ModalProfesor from '../components/ModalProfesor.vue'
 import ModalConfirmacion from '../components/ModalConfirmacion.vue'
-import ModalAsignarUsuario from '../components/ModalAsignarUsuario.vue' // <--- IMPORTADO
+import ModalAsignarUsuario from '../components/ModalAsignarUsuario.vue'
+import ModalHorario from '../components/ModalHorario.vue'
 
 const profesores = ref([])
 const busqueda = ref('')
@@ -136,6 +160,7 @@ const paginaActual = ref(0)
 const totalPaginas = ref(0)
 const elementosPorPagina = ref(10)
 const cargando = ref(false)
+const mensajeExito = ref('') 
 let timeoutBusqueda = null
 
 // Estado Modales
@@ -145,12 +170,17 @@ const profesorSeleccionado = ref(null)
 const mostrarModalBorrar = ref(false)
 const profesorABorrar = ref(null)
 
-const mostrarModalUsuario = ref(false) // <--- NUEVA VARIABLE
+const mostrarModalUsuario = ref(false)
+
+// Estado Modal Horario
+const mostrarModalHorario = ref(false)
+const profesorHorarioSeleccionado = ref(null)
 
 onMounted(() => {
   cargarProfesores()
 })
 
+// --- CARGA DE DATOS ---
 const cargarProfesores = async () => {
   cargando.value = true
   try {
@@ -179,7 +209,19 @@ const cambiarPagina = (delta) => {
   cargarProfesores()
 }
 
-// --- ACCIONES DE CREAR / EDITAR ---
+// --- GESTIÓN DE NOTIFICACIONES ---
+const mostrarNotificacion = (msg) => {
+  mensajeExito.value = msg
+  setTimeout(() => { mensajeExito.value = '' }, 3000)
+}
+
+const manejarExito = (mensajeRecibido) => {
+  cargarProfesores()
+  const texto = typeof mensajeRecibido === 'string' ? mensajeRecibido : 'Operación realizada con éxito'
+  mostrarNotificacion(texto)
+}
+
+// --- ACCIONES DE CREAR / EDITAR PROFESOR ---
 const abrirModalCrear = () => {
   profesorSeleccionado.value = null
   mostrarModalProfe.value = true
@@ -195,10 +237,6 @@ const cerrarModalProfe = () => {
   profesorSeleccionado.value = null
 }
 
-const recargarLista = () => {
-  cargarProfesores()
-}
-
 // --- ACCIONES DE BORRAR ---
 const confirmarBorrado = (profesor) => {
   profesorABorrar.value = profesor
@@ -211,16 +249,22 @@ const eliminarProfesor = async () => {
   
   try {
     await profesorService.eliminarProfesor(profesorABorrar.value.idProfesor)
-    cargarProfesores()
+    manejarExito('Profesor eliminado correctamente.')
   } catch (e) {
     console.error(e)
     alert("No se pudo eliminar. Puede que tenga horarios asignados.")
   }
 }
 
-// --- ACCIONES USUARIO ---
+// --- ACCIONES DE USUARIO ---
 const abrirModalUsuario = () => {
-  mostrarModalUsuario.value = true // <--- ABRE EL MODAL DE USUARIO
+  mostrarModalUsuario.value = true 
+}
+
+// --- ACCIONES DE HORARIO ---
+const abrirHorario = (profesor) => {
+  profesorHorarioSeleccionado.value = profesor
+  mostrarModalHorario.value = true
 }
 
 // --- HELPERS ---
@@ -237,7 +281,22 @@ const obtenerIniciales = (nombre) => {
 </script>
 
 <style scoped>
-.contenedor-gestion { margin-top: 80px; padding: 20px 50px; margin-left: 250px; }
-@media (max-width: 768px) { .contenedor-gestion { margin-left: 0; padding: 20px; } }
+/* VOLVEMOS AL ESTILO ORIGINAL (ALINEADO IZQUIERDA) */
+.contenedor-gestion { 
+  margin-top: 80px; 
+  padding: 20px 50px; 
+  margin-left: 250px; /* Margen para el menú lateral */
+}
+
+@media (max-width: 768px) { 
+  .contenedor-gestion { 
+    margin-left: 0; 
+    padding: 20px; 
+  } 
+}
+
 .avatar-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
