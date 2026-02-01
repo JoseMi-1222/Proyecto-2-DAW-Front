@@ -1,162 +1,177 @@
 <template>
-  <div class="container-fluid pt-4">
+  <div v-if="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2 text-muted">Cargando tu horario...</p>
+  </div>
+
+  <div v-else class="horario-container">
     
-    <div v-if="cargando" class="text-center py-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Cargando horario...</span>
-      </div>
+    <div v-if="!horarioActual.length" class="alert alert-warning text-center">
+      <i class="bi bi-exclamation-triangle me-2"></i> No hay datos de horario para este profesor.
     </div>
 
-    <div v-else>
-      <div class="d-none d-md-block">
-        <table class="table table-bordered text-start align-middle w-100 small">
-          <thead class="table-dark text-center">
-            <tr>
-              <th style="width: 100px;">Franja</th>
-              <th v-for="dia in diasSemana" :key="dia" style="width: 130px;">{{ dia }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="franja in franjasOrdenadas" :key="franja.horaInicio">
-              <td class="bg-light fw-bold text-center">
-                {{ franja.horaInicio.slice(0, 5) }} - {{ franja.horaFin.slice(0, 5) }}
-              </td>
-              <td v-for="dia in diasSemana" :key="dia" style="padding: 4px; font-size: 13px; text-align: left"
-                :style="esRecreo(franja) ? estiloRecreo : {}">
+    <div v-else class="table-responsive rounded shadow-sm bg-white">
+      <table class="table table-bordered text-center mb-0 align-middle">
+        
+        <thead class="bg-secondary text-white small text-uppercase">
+          <tr>
+            <th style="width: 100px;">Hora</th>
+            <th v-for="dia in diasSemana" :key="dia">{{ dia }}</th>
+          </tr>
+        </thead>
+        
+        <tbody>
+          <tr v-for="(franja, index) in franjasDefecto" :key="index">
+            
+            <td class="bg-light fw-bold text-muted small">
+              {{ franja.inicio }}<br>-<br>{{ franja.fin }}
+            </td>
+
+            <td 
+              v-for="dia in diasSemana" 
+              :key="dia" 
+              class="celda-horario p-0 position-relative"
+              :class="getCelda(dia, franja.inicio) ? 'bg-primary bg-opacity-10' : 'bg-white'"
+            >
+              <div class="w-100 h-100 p-2 d-flex flex-column justify-content-center" style="min-height: 80px;">
                 
-                <div v-if="esRecreo(franja)"><strong>Recreo</strong></div>
-                
-                <div v-else>
-                  <div v-for="(clase, i) in getClases(dia, franja)" :key="i" class="mb-1 p-1 rounded" 
-                       :style="obtenerEstilosAsignatura(clase.asignatura?.nombre)">
-                    
-                    <strong>{{ clase.asignatura?.nombre || 'Asignatura' }}</strong><br />
-                    <span class="text-muted">Aula:</span> {{ clase.aula?.codigo || '-' }}<br />
-                    <span class="text-muted">Curso:</span> {{ clase.curso?.nombre || '-' }}
-                    <hr v-if="getClases(dia, franja).length > 1 && i < getClases(dia, franja).length - 1" />
+                <div v-if="getCelda(dia, franja.inicio)">
+                  <div class="fw-bold text-primary small text-uppercase">
+                    {{ getCelda(dia, franja.inicio).asignatura.nombre }}
+                  </div>
+                  
+                  <div class="text-muted small mt-1" style="font-size: 0.75rem;">
+                     {{ getCelda(dia, franja.inicio).curso?.nombre || 'Sin curso' }}
+                  </div>
+
+                  <div v-if="getCelda(dia, franja.inicio).aula" class="mt-1">
+                    <span class="badge bg-white text-secondary border shadow-sm" style="font-weight: normal;">
+                      Aula {{ getCelda(dia, franja.inicio).aula.codigo }}
+                    </span>
                   </div>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      
-      <div class="d-md-none text-center text-muted py-4">
-          <i class="bi bi-phone-landscape fs-1"></i>
-          <p class="mt-2">Por favor, gira el dispositivo para ver la tabla completa.</p>
-       </div>
+                
+                <div v-else class="text-muted opacity-25 small">
+                  -
+                </div>
+
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, watch } from 'vue'
 import horarioService from '../services/horarioService'
 
+// Props: Recibimos el ID desde el HomeView
 const props = defineProps({
-  idProfesor: { type: [Number, String], default: null },
-  profesorId: { type: [Number, String], default: null }, 
-  fetchAll: { type: Boolean, default: false }
+  idProfesor: {
+    type: Number,
+    required: true
+  }
 })
 
-const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
-const horario = ref([])
+// --- ESTADO ---
+const horarioActual = ref([])
 const cargando = ref(false)
-const route = useRoute()
 
-// Calculamos el ID efectivo
-const effectiveIdProfesor = computed(() => {
-  return props.idProfesor ?? props.profesorId ?? route.params.id ?? null
-})
+// Configuración de Días y Horas (Idéntica al Modal)
+const diasSemana = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
+const mapaDias = {
+  'L': 'LUNES', 'M': 'MARTES', 'X': 'MIERCOLES', 'MI': 'MIERCOLES',
+  'J': 'JUEVES', 'V': 'VIERNES', 'S': 'SABADO', 'D': 'DOMINGO'
+}
+// Ajusta estas horas si tu instituto tiene otras
+// Configuración de franjas horarias (MAÑANA Y TARDE)
+const franjasDefecto = [
+  // --- TURNO MAÑANA ---
+  { id: 1, inicio: '08:15', fin: '09:15' },
+  { id: 2, inicio: '09:15', fin: '10:15' },
+  { id: 3, inicio: '10:15', fin: '11:15' },
+  // Recreo Mañana (11:15 - 11:45)
+  { id: 4, inicio: '11:45', fin: '12:45' },
+  { id: 5, inicio: '12:45', fin: '13:45' },
+  { id: 6, inicio: '13:45', fin: '14:45' },
 
-// --- FRANJAS Y HORAS ---
-const franjasFijas = [
-  { idFranja: 'R1', horaInicio: '18:00:00', horaFin: '18:15:00' },
-  { idFranja: 'R2', horaInicio: '11:15:00', horaFin: '11:45:00' }
+  // --- TURNO TARDE (Tu horario) ---
+  { id: 7, inicio: '15:00', fin: '16:00' },  // de 3 a 4
+  { id: 8, inicio: '16:00', fin: '17:00' },  // de 4 a 5
+  { id: 9, inicio: '17:00', fin: '18:00' },  // de 5 a 6
+  // Recreo Tarde (18:00 - 18:15)
+  { id: 10, inicio: '18:15', fin: '19:15' }, // de 6:15 a 7:15
+  { id: 11, inicio: '19:15', fin: '20:15' }, // de 7:15 a 8:15
+  { id: 12, inicio: '20:15', fin: '21:15' }  // de 8:15 a 9:15
 ]
 
-const franjasOrdenadas = computed(() => {
-  const mapa = new Map()
-  for (const h of horario.value) {
-    const clave = h.franja.horaInicio
-    if (!mapa.has(clave)) mapa.set(clave, h.franja)
-  }
-  const recreoSiempre = franjasFijas.find(f => f.horaInicio === '11:15:00')
-  if (recreoSiempre && !mapa.has(recreoSiempre.horaInicio)) mapa.set(recreoSiempre.horaInicio, recreoSiempre)
-  
-  const tieneClasesDespuesDe18 = horario.value.some(h => h.franja.horaInicio > '18:00:00')
-  const recreoTarde = franjasFijas.find(f => f.horaInicio === '18:00:00')
-  if (tieneClasesDespuesDe18 && recreoTarde && !mapa.has(recreoTarde.horaInicio)) mapa.set(recreoTarde.horaInicio, recreoTarde)
-
-  return Array.from(mapa.values()).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
-})
-
-function getClases(dia, franja) {
-  return horario.value.filter(
-    h => h.dia === dia && h.franja.horaInicio.slice(0, 5) === franja.horaInicio.slice(0, 5)
-  )
-}
-
-function esRecreo(franja) {
-  return franjasFijas.some(f => f.horaInicio === franja.horaInicio)
-}
-
-const estiloRecreo = { backgroundColor: 'rgba(255, 183, 77, 0.6)', border: '2px dashed orange', textAlign: 'center' }
-
 // --- CARGA DE DATOS ---
-async function cargarHorario() {
-  if (!effectiveIdProfesor.value && !props.fetchAll) {
-    horario.value = []
-    return
-  }
-
+const cargarHorario = async () => {
+  if (!props.idProfesor) return
+  
   cargando.value = true
   try {
-    const data = await horarioService.obtenerHorarios(
-      effectiveIdProfesor.value ? effectiveIdProfesor.value : null
-    )
-    
-    const diaMap = { L: 'Lunes', M: 'Martes', X: 'Miércoles', J: 'Jueves', V: 'Viernes' }
-    
-    // Mapeo directo sin filtros extraños
-    horario.value = data.map(item => ({ 
-      ...item, 
-      dia: diaMap[item.dia] || item.dia 
-    }))
-
-  } catch (error) {
-    console.error('Error al cargar el horario:', error)
-    horario.value = []
+    horarioActual.value = await horarioService.obtenerHorarioProfesor(props.idProfesor)
+  } catch (e) {
+    console.error("Error al cargar horario en Home:", e)
   } finally {
     cargando.value = false
   }
 }
 
-onMounted(() => { cargarHorario() })
+// Escuchar cambios en el ID (Importante para cuando el Admin cambia el select)
+watch(() => props.idProfesor, () => {
+  cargarHorario()
+}, { immediate: true })
 
-watch(effectiveIdProfesor, (newVal, oldVal) => {
-  if (newVal !== oldVal) cargarHorario()
-})
+// --- LÓGICA DE PINTADO (Copiada del Modal para consistencia) ---
+const getCelda = (diaColumna, franjaInicio) => {
+  const [horaTabla, minTabla] = franjaInicio.split(':').map(Number)
 
-// --- ESTILOS VISUALES ---
-const coloresAsignaturas = ref({})
-const paletaColoresSuaves = ['#E3F2FD', '#E8F5E9', '#FFF3E0', '#F3E5F5', '#FFEBEE', '#E0F7FA']
+  return horarioActual.value.find(h => {
+    if (!h.franja) return false
+    
+    // 1. Normalizar Día
+    const diaBackRaw = h.dia ? h.dia.toUpperCase().trim() : ''
+    const diaBackNormalizado = mapaDias[diaBackRaw] || diaBackRaw
+    const coincideDia = diaBackNormalizado === diaColumna
 
-function obtenerEstilosAsignatura(asignatura) {
-  if (!asignatura) return {}
-  if (!coloresAsignaturas.value[asignatura]) {
-    const total = Object.keys(coloresAsignaturas.value).length
-    coloresAsignaturas.value[asignatura] = paletaColoresSuaves[total % paletaColoresSuaves.length]
-  }
-  return { backgroundColor: coloresAsignaturas.value[asignatura], border: '1px solid rgba(0,0,0,0.1)' }
+    // 2. Normalizar Hora
+    let horaBack, minBack
+    const val = h.franja.horaInicio
+    
+    // Soporte para Array [8, 15] o String "08:15"
+    if (Array.isArray(val)) { 
+        horaBack = val[0]; minBack = val[1] 
+    } else if (typeof val === 'string') { 
+        const p = val.split(':'); horaBack = Number(p[0]); minBack = Number(p[1]) 
+    } else {
+        return false
+    }
+    
+    return coincideDia && (horaBack === horaTabla) && (minBack === minTabla)
+  })
 }
 </script>
 
 <style scoped>
-table, table th, table td {
-  border: 1px solid #dee2e6 !important;
-  border-collapse: collapse !important;
+/* Altura mínima para que las celdas se vean uniformes aunque estén vacías */
+.celda-horario {
+  height: 100px; 
+  vertical-align: middle;
+  transition: background-color 0.3s;
+}
+
+/* Efecto hover suave para facilitar la lectura */
+.celda-horario:hover {
+  background-color: #f8f9fa !important; /* Gris muy clarito al pasar el ratón */
+}
+
+/* Si la celda está ocupada (azul), oscurecemos un poco el azul al pasar el ratón */
+.bg-primary.bg-opacity-10:hover {
+    background-color: rgba(13, 110, 253, 0.15) !important;
 }
 </style>

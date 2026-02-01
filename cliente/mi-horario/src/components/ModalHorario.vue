@@ -175,13 +175,25 @@ const mapaDias = {
   'L': 'LUNES', 'M': 'MARTES', 'X': 'MIERCOLES', 'MI': 'MIERCOLES',
   'J': 'JUEVES', 'V': 'VIERNES', 'S': 'SABADO', 'D': 'DOMINGO'
 }
+// Configuración de franjas horarias (MAÑANA Y TARDE)
 const franjasDefecto = [
+  // --- TURNO MAÑANA ---
   { id: 1, inicio: '08:15', fin: '09:15' },
   { id: 2, inicio: '09:15', fin: '10:15' },
   { id: 3, inicio: '10:15', fin: '11:15' },
+  // Recreo Mañana (11:15 - 11:45)
   { id: 4, inicio: '11:45', fin: '12:45' },
   { id: 5, inicio: '12:45', fin: '13:45' },
-  { id: 6, inicio: '13:45', fin: '14:45' }
+  { id: 6, inicio: '13:45', fin: '14:45' },
+
+  // --- TURNO TARDE (Tu horario) ---
+  { id: 7, inicio: '15:00', fin: '16:00' },  // de 3 a 4
+  { id: 8, inicio: '16:00', fin: '17:00' },  // de 4 a 5
+  { id: 9, inicio: '17:00', fin: '18:00' },  // de 5 a 6
+  // Recreo Tarde (18:00 - 18:15)
+  { id: 10, inicio: '18:15', fin: '19:15' }, // de 6:15 a 7:15
+  { id: 11, inicio: '19:15', fin: '20:15' }, // de 7:15 a 8:15
+  { id: 12, inicio: '20:15', fin: '21:15' }  // de 8:15 a 9:15
 ]
 
 // --- COMPUTED: Filtrado del buscador ---

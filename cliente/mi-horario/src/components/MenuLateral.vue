@@ -67,8 +67,6 @@
     <div class="offcanvas-body">
       <div class="d-flex flex-column gap-2">
         
-        <input ref="fileInput" type="file" @change="subirArchivoSelec" style="display: none" />
-
         <button class="btn btn-menu text-start" @click="navegar('/home')">
           <span class="me-2">🏠</span> Inicio
         </button>
@@ -88,16 +86,12 @@
              <span class="me-2">🛡️</span> Control Global Ausencias
            </button>
 
-           <button class="btn btn-menu text-start" @click="abrirArchivoSelec">
-             <span class="me-2">📤</span> Subir archivo de datos
-           </button>
-
            <button class="btn btn-menu text-start" @click="navegar('/datos-profesorado')">
-             <span class="me-2">👨‍🏫</span> Datos profesorado
+             <span class="me-2">👨‍🏫</span> Datos Profesorado
            </button>
-
-           <button class="btn btn-menu text-start" @click="generarParteDiario">
-             <span class="me-2">📄</span> Generar partes diario
+           
+           <button class="btn btn-menu text-start" @click="navegar('/gestion-datos')">
+             <span class="me-2">💾</span> Gestión de Datos / Backups
            </button>
         </div>
 
@@ -118,7 +112,6 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import adminService from '../services/adminService'
 import { Offcanvas } from 'bootstrap'
 import modalmensaje from '../components/ModalMensaje.vue'
 
@@ -129,14 +122,6 @@ const auth = useAuthStore()
 let bsOffcanvas = null
 const dropdownAbierto = ref(false)
 const cargando = ref(false)
-const fileInput = ref(null)
-
-// Computed para saber si es admin de forma limpia
-// Ajusta 'ROLE_ADMINISTRADOR' o 'administrador' según cómo venga de tu Java
-const esAdmin = computed(() => {
-  const rol = auth.usuario?.rol || ''
-  return rol.toUpperCase() === 'ADMINISTRADOR' || rol.toUpperCase() === 'ROLE_ADMINISTRADOR'
-})
 
 // Variables Modal
 const modalVisible = ref(false)
@@ -144,18 +129,18 @@ const modalTitulo = ref('')
 const modalMensaje = ref('')
 const modalTipo = ref('info')
 
+// Computed para saber si es admin
+const esAdmin = computed(() => {
+  const rol = auth.usuario?.rol || ''
+  return rol.toUpperCase() === 'ADMINISTRADOR' || rol.toUpperCase() === 'ROLE_ADMINISTRADOR'
+})
+
 onMounted(() => {
   const sidebarEl = document.getElementById('sidePanel')
   if(sidebarEl) {
     bsOffcanvas = new Offcanvas(sidebarEl)
   }
-  
   document.addEventListener('click', cerrarDropdownAlClickeoFuera)
-
-  if (localStorage.getItem('mostrarModalImportacion') === '1') {
-    mostrarModal('Importación exitosa', 'Archivo importado correctamente.', 'success')
-    localStorage.removeItem('mostrarModalImportacion')
-  }
 })
 
 onUnmounted(() => {
@@ -172,7 +157,7 @@ function navegar(ruta) {
   dropdownAbierto.value = false
   setTimeout(() => {
     router.push(ruta)
-  }, 350)
+  }, 300)
 }
 
 function toggleUsuarioDropdown() {
@@ -189,65 +174,6 @@ function cerrarDropdownAlClickeoFuera(event) {
 function logout() {
   auth.logout()
   router.push('/login')
-}
-
-// --- FUNCIONES ADMIN ---
-function abrirArchivoSelec() {
-  if(bsOffcanvas) bsOffcanvas.hide()
-  if (fileInput.value) {
-    fileInput.value.value = ''
-    fileInput.value.click()
-  }
-}
-
-function subirArchivoSelec(event) {
-  const file = event.target.files[0]
-  if (!file) return
-
-  const reader = new FileReader()
-  reader.onload = async () => {
-    const base64File = reader.result.split(',')[1]
-    cargando.value = true
-
-    try {
-      await adminService.importarHorariosDesdeBase64(base64File)
-      mostrarModal('Importación exitosa', 'Datos importados correctamente', 'success')
-    } catch (error) {
-      console.error(error)
-      mostrarModal('Error', 'Error al importar el archivo.', 'error')
-    } finally {
-      cargando.value = false
-    }
-  }
-  reader.readAsDataURL(file)
-}
-
-async function generarParteDiario() {
-  if(bsOffcanvas) bsOffcanvas.hide()
-  cargando.value = true
-  
-  try {
-    const base64PDF = await adminService.generarParteAusencias()
-    const byteCharacters = atob(base64PDF)
-    const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i))
-    const byteArray = new Uint8Array(byteNumbers)
-    const blob = new Blob([byteArray], { type: 'application/pdf' })
-
-    const fecha = new Date()
-    const nombreArchivo = `parte-${fecha.getDate()}-${fecha.getMonth() + 1}.pdf`
-    
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = nombreArchivo
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  } catch (error) {
-    console.error(error)
-    mostrarModal('Error', 'No se pudo generar el parte.', 'error')
-  } finally {
-    cargando.value = false
-  }
 }
 
 // --- FUNCIONES MODAL ---
@@ -278,7 +204,6 @@ function cerrarModal() {
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
 }
-/* Estilo especial para el botón del admin */
 .text-warning {
   color: #ffc107 !important;
 }

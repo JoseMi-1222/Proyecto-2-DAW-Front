@@ -2,12 +2,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import HomeView from '../views/HomeView.vue'
 import PerfilView from '../views/PerfilView.vue'
-import DatosProfesoradoView from '../views/DatosProfesoradoView.vue' // Nombre corregido (PascalCase)
-import DatosProfesor from '../views/DatosProfesor.vue' // Nombre corregido
+import DatosProfesoradoView from '../views/DatosProfesoradoView.vue'
+import DatosProfesor from '../views/DatosProfesor.vue'
 import FormularioUsuarioView from '../views/FormularioUsuarioView.vue'
 import AusenciasProfesorView from '../views/AusenciasProfesorView.vue'
 import DatosUsuarioView from '../views/DatosUsuarioView.vue'
 import AusenciasAdminView from '../views/AusenciasAdminView.vue'
+import GestionDatosView from '../views/GestionDatosView.vue' 
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -19,7 +20,14 @@ const routes = [
   { 
     path: '/datos-profesorado', 
     component: DatosProfesoradoView,
-    meta: { requireAdmin: true } // Añadida seguridad
+    meta: { requireAdmin: true } 
+  },
+
+  // --- NUEVA RUTA: IMPORTAR/EXPORTAR DATOS (Protegida) ---
+  { 
+    path: '/gestion-datos', 
+    component: GestionDatosView,
+    meta: { requireAdmin: true } 
   },
   
   { path: '/profesor/:id', component: DatosProfesor },
