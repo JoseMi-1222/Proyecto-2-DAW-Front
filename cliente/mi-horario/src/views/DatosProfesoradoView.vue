@@ -1,383 +1,243 @@
 <template>
   <MenuLateral />
-
-  <div class=" mt-5 pt-4 px-3">
-
-    <div class="mb-4 d-flex justify-content-center mt-5" style="margin-top: 200px;">
-  <BuscadorProfesores @buscar="buscarProfesoresDesdeEvento" />
-</div>
-
-
-
-    <!-- Contenedor centrado con formulario flotante -->
-    <div class="main-wrapper d-flex justify-content-center align-items-start w-100 position-relative">
-
-      <!-- Lista de Profesores -->
+  
+  <div class="contenedor-gestion">
+    <div class="header-gestion d-flex justify-content-between align-items-center mb-4">
       <div>
-        <div d-flex flex-column align-items-center me-3>
-          <TarjetaProfesor v-for="profesor in resultados" :key="profesor.idProfesor" :profesor="profesor"
-            :profesorSeleccionado="profesorSeleccionado" :formulario="formularios[profesor.idProfesor] || {}"
-            :errores="erroresFormulario" :isLoading="isLoading" @toggleFormulario="mostrarFormularioCrear"
-            @guardarUsuario="guardarUsuario" @cancelarFormulario="cancelarFormulario" @eliminarUsuario="eliminarUsuario"
-            @imagenSubida="obtenerTodosLosProfesores" @modificarUsuario="modificarUsuario"
-            @verDetalles="irADetallesUsuario" :class="{
-              'espacio-formulario-movil': profesorSeleccionado && isMobile
-            }" />
+        <h2 class="fw-bold mb-1"><i class="bi bi-people-fill me-2"></i>Gestión de Profesorado</h2>
+      </div>
+      
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" @click="abrirModalUsuario">
+          <i class="bi bi-person-plus-fill me-2"></i>Asignar Usuario
+        </button>
+        <button class="btn btn-primary" @click="abrirModalCrear">
+          <i class="bi bi-plus-lg me-2"></i>Nuevo Profesor
+        </button>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3 bg-light rounded-top">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+          <input 
+            type="text" 
+            class="form-control border-start-0 ps-0" 
+            placeholder="Buscar por nombre..." 
+            v-model="busqueda"
+            @input="buscarConRetraso"
+          >
         </div>
       </div>
     </div>
 
-  </div>
+    <div v-if="cargando" class="text-center py-5">
+      <div class="spinner-border text-primary"></div>
+    </div>
 
-  <ModalMensaje :visible="modal.visible" :titulo="modal.titulo" :mensaje="modal.mensaje" :tipo="modal.tipo"
-    @cerrar="cerrarModal" />
+    <div v-else class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Profesor</th>
+              <th>Usuario / Email</th>
+              <th>Asignaturas</th>
+              <th class="text-end pe-4">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="profesores.length === 0">
+              <td colspan="4" class="text-center py-4 text-muted">No se encontraron resultados.</td>
+            </tr>
+            <tr v-for="prof in profesores" :key="prof.idProfesor">
+              <td class="ps-4">
+                <div class="d-flex align-items-center">
+                  <div class="avatar-circle me-3 bg-primary text-white">
+                    {{ obtenerIniciales(prof.nombre) }}
+                  </div>
+                  <div>
+                    <div class="fw-bold">{{ prof.nombre }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div v-if="prof.usuario">
+                  <small class="d-block text-dark"><i class="bi bi-envelope me-1"></i>{{ prof.usuario.email }}</small>
+                  <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Activo</span>
+                </div>
+                <div v-else>
+                  <span class="badge bg-secondary bg-opacity-10 text-secondary">Sin usuario</span>
+                </div>
+              </td>
+              <td>
+                <small class="text-muted" v-if="!prof.horarios || prof.horarios.length === 0">Sin asignaturas</small>
+                <div v-else class="d-flex flex-wrap gap-1">
+                   <span v-for="(asig, i) in obtenerAsignaturasUnicas(prof.horarios)" :key="i" class="badge bg-light text-dark border">{{ asig }}</span>
+                </div>
+              </td>
+              <td class="text-end pe-4">
+                <button class="btn btn-sm btn-light text-primary me-2" @click="abrirModalEditar(prof)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-light text-danger" @click="confirmarBorrado(prof)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
+        <span class="text-muted small">Página {{ paginaActual + 1 }} de {{ totalPaginas }}</span>
+        <div class="btn-group">
+          <button class="btn btn-outline-secondary btn-sm" :disabled="paginaActual === 0" @click="cambiarPagina(-1)">Anterior</button>
+          <button class="btn btn-outline-secondary btn-sm" :disabled="paginaActual >= totalPaginas - 1" @click="cambiarPagina(1)">Siguiente</button>
+        </div>
+      </div>
+    </div>
+
+    <ModalProfesor 
+      :visible="mostrarModalProfe"
+      :profesorAEditar="profesorSeleccionado"
+      @cerrar="cerrarModalProfe"
+      @guardar-exito="recargarLista"
+    />
+
+    <ModalConfirmacion 
+      :visible="mostrarModalBorrar"
+      mensaje="¿Seguro que quieres eliminar a este profesor? Esta acción no se puede deshacer."
+      @cerrar="mostrarModalBorrar = false"
+      @confirmar="eliminarProfesor"
+    />
+
+    <ModalAsignarUsuario 
+      :visible="mostrarModalUsuario"
+      @cerrar="mostrarModalUsuario = false"
+      @guardar-exito="recargarLista"
+    />
+
+  </div>
 </template>
 
-
-
 <script setup>
-import MenuLateral from '../components/MenuLateral.vue'
-import BuscadorProfesores from '../components/BuscadorProfesores.vue'
-import TarjetaProfesor from '../components/TarjetaProfesor.vue'
-import ModalMensaje from '../components/ModalMensaje.vue'
-
-import { useRouter } from 'vue-router'
-
-
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import profesorService from '../services/profesorService'
-import usuarioService from '../services/usuarioService'
+import MenuLateral from '../components/MenuLateral.vue'
+import ModalProfesor from '../components/ModalProfesor.vue'
+import ModalConfirmacion from '../components/ModalConfirmacion.vue'
+import ModalAsignarUsuario from '../components/ModalAsignarUsuario.vue' // <--- IMPORTADO
 
+const profesores = ref([])
 const busqueda = ref('')
-const resultados = ref([])
-const profesorSeleccionado = ref(null)  // Solo el ID del profesor
-const formularios = ref({})
-const isLoading = ref(false)
-const erroresFormulario = ref({})
-const action = ref('')  // Asegúrate de que action sea un ref
-const router = useRouter()
+const paginaActual = ref(0)
+const totalPaginas = ref(0)
+const elementosPorPagina = ref(10)
+const cargando = ref(false)
+let timeoutBusqueda = null
 
+// Estado Modales
+const mostrarModalProfe = ref(false)
+const profesorSeleccionado = ref(null) 
 
+const mostrarModalBorrar = ref(false)
+const profesorABorrar = ref(null)
 
-// Al entrar en la pagina automaticamente
+const mostrarModalUsuario = ref(false) // <--- NUEVA VARIABLE
+
 onMounted(() => {
-  obtenerTodosLosProfesores()
+  cargarProfesores()
 })
 
-
-function mostrarFormularioCrear({ profesorId, action: actionType }) {
-  const anchoPantalla = window.innerWidth
-  if (anchoPantalla <= 768) {
-    // En móvil redirigimos
-    window.location.href = `/formulario/${profesorId}?action=${actionType}`
-  } else {
-    // En escritorio mostramos el formulario flotante
-    if (profesorSeleccionado.value === profesorId) {
-      profesorSeleccionado.value = null
-      action.value = ''
-      erroresFormulario.value = {}
-    } else {
-      profesorSeleccionado.value = profesorId
-      action.value = actionType
-      erroresFormulario.value = {}
-    }
-  }
-}
-
-
-// Modal genérico
-const modal = ref({
-  visible: false,
-  titulo: '',
-  mensaje: '',
-  tipo: 'info'
-})
-
-function mostrarModal(titulo, mensaje, tipo = 'info') {
-  modal.value = {
-    visible: true,
-    titulo,
-    mensaje,
-    tipo
-  }
-}
-
-function cerrarModal() {
-  modal.value.visible = false
-}
-
-
-// Buscar desde componente hijo
-function buscarProfesoresDesdeEvento(valor) {
-  busqueda.value = valor
-  buscarProfesores()
-}
-
-// Buscar profesores
-async function buscarProfesores() {
-  if (busqueda.value.trim().length < 2) {
-    obtenerTodosLosProfesores()
-    return
-  }
-
+const cargarProfesores = async () => {
+  cargando.value = true
   try {
-    resultados.value = await profesorService.buscarProfesoresPorNombre(busqueda.value)
+    const data = await profesorService.obtenerProfesoresGestion(
+      busqueda.value, paginaActual.value, elementosPorPagina.value
+    )
+    profesores.value = data.content
+    totalPaginas.value = data.totalPages
   } catch (error) {
-    console.error('Error al buscar profesores:', error)
+    console.error(error)
+  } finally {
+    cargando.value = false
   }
 }
 
-// Obtener todos los profesores
-async function obtenerTodosLosProfesores() {
-  try {
-    resultados.value = await profesorService.obtenerProfesores()
-  } catch (error) {
-    console.error('Error al obtener profesores:', error)
-  }
+const buscarConRetraso = () => {
+  if (timeoutBusqueda) clearTimeout(timeoutBusqueda)
+  timeoutBusqueda = setTimeout(() => {
+    paginaActual.value = 0
+    cargarProfesores()
+  }, 500)
 }
 
-// Cerrar formulario
-function cancelarFormulario() {
+const cambiarPagina = (delta) => {
+  paginaActual.value += delta
+  cargarProfesores()
+}
+
+// --- ACCIONES DE CREAR / EDITAR ---
+const abrirModalCrear = () => {
   profesorSeleccionado.value = null
-  action.value = ''  // Resetear la acción
+  mostrarModalProfe.value = true
 }
 
+const abrirModalEditar = (profesor) => {
+  profesorSeleccionado.value = { ...profesor }
+  mostrarModalProfe.value = true
+}
 
-async function guardarUsuario(datosFormulario) {
-  const { idProfesor, email, password, rol, nombre } = datosFormulario;
+const cerrarModalProfe = () => {
+  mostrarModalProfe.value = false
+  profesorSeleccionado.value = null
+}
 
-  if (!email || !password || !rol || !nombre) {
-    mostrarModal(' Campos incompletos', 'Por favor, completa todos los campos.', 'warning');
-    return;
-  }
+const recargarLista = () => {
+  cargarProfesores()
+}
 
-  const payload = {
-    idProfesor,
-    nombre,
-    email,
-    contraseña: password,
-    rol
-  };
+// --- ACCIONES DE BORRAR ---
+const confirmarBorrado = (profesor) => {
+  profesorABorrar.value = profesor
+  mostrarModalBorrar.value = true
+}
 
-  console.log("Payload que se enviará:", payload);
-
-  isLoading.value = true;
-
+const eliminarProfesor = async () => {
+  mostrarModalBorrar.value = false
+  if (!profesorABorrar.value) return
+  
   try {
-    const data = await usuarioService.crearConProfesor(idProfesor, payload);
-    console.log("Respuesta del servidor:", data);
-    mostrarModal(' Usuario creado', `Se ha vinculado correctamente a ${nombre}`, 'success');
-    profesorSeleccionado.value = null;
-    obtenerTodosLosProfesores();
-
-  } catch (error) {
-    if (error.response) {
-      console.error('Error en la respuesta del servidor:', error.response);
-
-      // Solo pasar los errores al formulario si son validaciones
-      if (error.response.status === 400 && error.response.data) {
-        console.log("Errores de validación:", error.response.data);
-        erroresFormulario.value = error.response.data; // Mostrar solo errores de validación
-      } else {
-        // Si es otro tipo de error, mostrar el modal de error
-        mostrarModal(' Error', 'Ese usuario ya existe.', 'error');
-      }
-    } else {
-      console.error("Error desconocido:", error);
-      mostrarModal(' Error', 'Ocurrió un error inesperado.', 'error');
-    }
-  } finally {
-    isLoading.value = false;
+    await profesorService.eliminarProfesor(profesorABorrar.value.idProfesor)
+    cargarProfesores()
+  } catch (e) {
+    console.error(e)
+    alert("No se pudo eliminar. Puede que tenga horarios asignados.")
   }
 }
 
-
-// Función para borrar usuario
-async function eliminarUsuario(profesor) {
-  console.log("ID del usuario a eliminar:", profesor.usuario.id)
-
-  if (!confirm(`¿Estás seguro de eliminar el usuario vinculado a ${profesor.nombre}?`)) return
-
-  try {
-    await usuarioService.eliminar(profesor.usuario.id)
-
-    mostrarModal(' Usuario eliminado', `El usuario de ${profesor.nombre} ha sido eliminado.`, 'success')
-    obtenerTodosLosProfesores()
-  } catch (error) {
-    console.error('Error al eliminar usuario:', error)
-    mostrarModal(' Error', 'No se pudo eliminar el usuario.', 'error')
-  }
+// --- ACCIONES USUARIO ---
+const abrirModalUsuario = () => {
+  mostrarModalUsuario.value = true // <--- ABRE EL MODAL DE USUARIO
 }
 
-
-
-
-// Modificar usuario
-async function modificarUsuario(datosFormulario) {
-  const { idUsuario, email, password, rol, nombre } = datosFormulario;
-  // Asegúrate de que el idUsuario no sea nulo o indefinido
-  console.log(idUsuario + email + password + rol + nombre)
-  if (!idUsuario) {
-    mostrarModal(' Error', 'El ID del usuario no puede ser nulo.', 'error');
-    return;
-  }
-
-  const payload = {
-    idUsuario,     // Cambiado a idUsuario
-    nombre,
-    email,
-    contraseña: password,
-    rol
-  };
-
-  console.log("Datos a enviar al backend:", payload);
-
-  isLoading.value = true;
-
-  try {
-    const data = await usuarioService.actualizar(idUsuario, payload);
-    console.log("Respuesta del servidor:", data);
-    mostrarModal(' Usuario modificado', `Se ha modificado correctamente a ${nombre}`, 'success');
-    profesorSeleccionado.value = null;
-    obtenerTodosLosProfesores();
-  } catch (error) {
-
-    // Manejo de errores
-    if (error.response) {
-      console.error('Error en la respuesta del servidor:', error.response);
-
-      // Solo pasar los errores al formulario si son validaciones
-      if (error.response.status === 400 && error.response.data) {
-        console.log("Errores de validación:", error.response.data);
-        erroresFormulario.value = error.response.data; // Mostrar solo errores de validación
-
-      } else {
-        // Si es otro tipo de error
-        mostrarModal(' Error', 'El usuario ya existe o hay otro error.', 'error');
-      }
-    } else {
-      console.error("Error desconocido:", error);
-      mostrarModal(' Error', 'Ocurrió un error inesperado.', 'error');
-    }
-
-  } finally {
-    isLoading.value = false;
-  }
-
+// --- HELPERS ---
+const obtenerAsignaturasUnicas = (horarios) => {
+  if (!horarios) return []
+  const asignaturas = horarios.map(h => h.asignatura?.nombre).filter(n => n)
+  return [...new Set(asignaturas)].slice(0, 3)
 }
 
-
-function irADetallesUsuario(idProfesor) {
-  router.push(`/datosusuario/${idProfesor}`)
+const obtenerIniciales = (nombre) => {
+  if (!nombre) return '?'
+  return nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
 }
-
-
-
-
 </script>
 
-
-
-
-
 <style scoped>
-/* En móviles, añade más separación desde arriba */
-@media (max-width: 800px) {
-  .main-content {
-    margin-top: 130px !important;
-  }
-}
-
-/* Estilo del buscador */
-.stylish-search {
-  border-radius: 40px;
-  background-color: #f8f9fa;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease;
-}
-
-.stylish-search:focus-within {
-  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.2);
-}
-
-.stylish-search input::placeholder {
-  color: #6c757d;
-  font-style: italic;
-}
-
-/* Scroll tarjetas */
-.scrollable-profesores {
-  max-height: 66vh;
-  overflow-y: auto;
-  width: 100%;
-}
-
-/* Para la barra vertical */
-/* .scrollable-profesores::-webkit-scrollbar {
-  display: none;
-} */
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-.modal-content {
-  background-color: white;
-  padding: 2rem;
-  border-radius: 10px;
-  max-width: 400px;
-  width: 90%;
-  position: relative;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-  text-align: center;
-}
-
-.close-btn {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  border: none;
-  background: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
-/* Transición */
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.main-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: none;
-  /* opcional, si querés quitar el límite */
-}
-
-
-/* Formulario flotante */
-.formulario-flotante {
-  position: absolute;
-  top: 180px;
-  right: 100px;
-  width: 400px;
-  z-index: 10;
-}
+.contenedor-gestion { margin-top: 80px; padding: 20px 50px; margin-left: 250px; }
+@media (max-width: 768px) { .contenedor-gestion { margin-left: 0; padding: 20px; } }
+.avatar-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 </style>

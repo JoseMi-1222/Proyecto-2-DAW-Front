@@ -2,29 +2,36 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import HomeView from '../views/HomeView.vue'
 import PerfilView from '../views/PerfilView.vue'
-import datosprofesoradoView from '../views/DatosProfesoradoView.vue'
-import datosprofesor from '../views/DatosProfesor.vue'
+import DatosProfesoradoView from '../views/DatosProfesoradoView.vue' // Nombre corregido (PascalCase)
+import DatosProfesor from '../views/DatosProfesor.vue' // Nombre corregido
 import FormularioUsuarioView from '../views/FormularioUsuarioView.vue'
 import AusenciasProfesorView from '../views/AusenciasProfesorView.vue'
 import DatosUsuarioView from '../views/DatosUsuarioView.vue'
-import AusenciasAdminView from '../views/AusenciasAdminView.vue' // <--- NUEVO IMPORT
+import AusenciasAdminView from '../views/AusenciasAdminView.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', component: LoginView },
   { path: '/home', component: HomeView },
   { path: '/perfil', component: PerfilView },
-  { path: '/datos-profesorado', component: datosprofesoradoView },
-  { path: '/profesor/:id', component: datosprofesor },
+  
+  // --- GESTIÓN DE PROFESORES (Protegida) ---
+  { 
+    path: '/datos-profesorado', 
+    component: DatosProfesoradoView,
+    meta: { requireAdmin: true } // Añadida seguridad
+  },
+  
+  { path: '/profesor/:id', component: DatosProfesor },
   { path: '/formulario/:id', component: FormularioUsuarioView },
   { path: '/mis-ausencias', component: AusenciasProfesorView },
   { path: '/datosusuario/:id', component: DatosUsuarioView },
   
-  // --- NUEVA RUTA DE ADMIN ---
+  // --- PANEL ADMIN AUSENCIAS (Protegida) ---
   { 
     path: '/admin/ausencias', 
     component: AusenciasAdminView,
-    meta: { requireAdmin: true } // Marca para protegerla si usas beforeEach
+    meta: { requireAdmin: true } 
   },
 
   { path: '/:pathMatch(.*)*', redirect: '/home' },
