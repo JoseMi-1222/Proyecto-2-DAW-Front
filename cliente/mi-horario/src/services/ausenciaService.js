@@ -12,7 +12,25 @@ export default {
     },
 
     // Crear una nueva ausencia
-    crearAusencia(datosAusencia) {
+    crearAusencia(datosAusencia, archivoAdjunto = null) {
+        if (archivoAdjunto) {
+            const formData = new FormData();
+
+            Object.entries(datosAusencia).forEach(([clave, valor]) => {
+                if (valor !== null && valor !== undefined) {
+                    formData.append(clave, valor);
+                }
+            });
+
+            formData.append('archivo', archivoAdjunto);
+
+            return api.post('/ausencias', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            }).then(res => res.data);
+        }
+
         return api.post('/ausencias', datosAusencia).then(res => res.data);
     },
 

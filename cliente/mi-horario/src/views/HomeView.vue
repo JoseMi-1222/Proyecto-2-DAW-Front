@@ -28,18 +28,28 @@
               <input 
                 type="text" 
                 class="form-control border-start-0 ps-0" 
-                placeholder="Escribe un nombre..." 
+                placeholder="Escribe o despliega la lista..." 
                 v-model="busquedaProfesor"
                 @focus="mostrarLista = true"
                 @input="mostrarLista = true"
+                @keydown.down.prevent="mostrarLista = true"
                 autocomplete="off"
               >
+              <button
+                class="btn btn-outline-secondary border-start-0"
+                type="button"
+                @click="mostrarLista = !mostrarLista"
+                :aria-expanded="mostrarLista"
+                title="Mostrar lista de profesorado"
+              >
+                <i class="bi" :class="mostrarLista ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </button>
               <button v-if="idProfesorSeleccionado" class="btn btn-outline-secondary border-start-0" @click="limpiarSeleccion">
                 <i class="bi bi-x-lg"></i>
               </button>
             </div>
 
-            <div v-if="mostrarLista && busquedaProfesor" class="lista-flotante shadow rounded border">
+            <div v-if="mostrarLista" class="lista-flotante shadow rounded border">
               <ul class="list-unstyled mb-0">
                 <li 
                   v-for="profe in profesoresFiltrados" 
@@ -51,13 +61,14 @@
                     {{ obtenerIniciales(profe.nombre) }}
                   </div>
                   <div>
-                    <div class="fw-bold text-dark">{{ profe.nombre }} {{ profe.apellido || '' }}</div>
+                    <div class="fw-bold text-dark">{{ obtenerNombreCompleto(profe) }}</div>
                     <small class="text-muted" style="font-size: 0.75rem;">{{ profe.email }}</small>
                   </div>
                 </li>
                 
                 <li v-if="profesoresFiltrados.length === 0" class="p-3 text-center text-muted small">
-                  <i class="bi bi-emoji-frown me-1"></i> No se encuentran coincidencias
+                  <i class="bi bi-emoji-frown me-1"></i>
+                  {{ busquedaProfesor ? 'No se encuentran coincidencias' : 'No hay profesorado disponible' }}
                 </li>
               </ul>
             </div>
@@ -135,13 +146,20 @@ const esAdmin = computed(() => auth.usuario?.rol === 'administrador')
 
 // --- FILTRO INTELIGENTE ---
 const profesoresFiltrados = computed(() => {
-  if (!busquedaProfesor.value) return []
-  
-  const termino = busquedaProfesor.value.toLowerCase()
-  return listaProfesores.value.filter(p => {
-    const nombreCompleto = `${p.nombre} ${p.apellido || ''}`.toLowerCase()
+  const termino = busquedaProfesor.value.toLowerCase().trim()
+
+  const profesoresOrdenados = [...listaProfesores.value].sort((a, b) =>
+    obtenerNombreCompleto(a).localeCompare(obtenerNombreCompleto(b), 'es', { sensitivity: 'base' })
+  )
+
+  if (!termino) {
+    return profesoresOrdenados.slice(0, 200)
+  }
+
+  return profesoresOrdenados.filter(p => {
+    const nombreCompleto = obtenerNombreCompleto(p).toLowerCase()
     return nombreCompleto.includes(termino) || (p.email && p.email.toLowerCase().includes(termino))
-  }).slice(0, 5) // Limitamos a 5 resultados para que no sea enorme
+  }).slice(0, 12)
 })
 
 // --- ID FINAL A ENVIAR AL COMPONENTE HORARIO ---
@@ -162,7 +180,7 @@ onMounted(async () => {
 // --- FUNCIONES DEL BUSCADOR ---
 const seleccionarProfesor = (profe) => {
   idProfesorSeleccionado.value = profe.idProfesor
-  nombreProfesorSeleccionado.value = `${profe.nombre} ${profe.apellido || ''}`
+  nombreProfesorSeleccionado.value = obtenerNombreCompleto(profe)
   busquedaProfesor.value = nombreProfesorSeleccionado.value // Ponemos el nombre en el input
   mostrarLista.value = false
 }
@@ -178,6 +196,8 @@ const obtenerIniciales = (nombre) => {
   if (!nombre) return '?'
   return nombre.substring(0, 2).toUpperCase()
 }
+
+const obtenerNombreCompleto = (profe) => `${profe.nombre} ${profe.apellido || ''}`.trim()
 
 // --- LÓGICA DE CARGA INICIAL ---
 async function cargarYBuscarProfesor() {

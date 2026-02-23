@@ -14,13 +14,13 @@
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-bold">2. Motivo (para todas las horas)</label>
+            <label class="form-label fw-bold">2. Instrucciones </label>
             <input 
               type="text" 
               v-model="nuevaAusencia.motivo" 
               class="form-control form-control-lg" 
-              placeholder="Ej: Consulta médica" 
-              required 
+              placeholder="Ej: Tareas al profesor de guardia" 
+              
             />
           </div>
 
