@@ -15,7 +15,6 @@ export default {
     subirArchivo(file) {
         const formData = new FormData();
         formData.append("file", file);
-        
         return api.post('/ausencias/upload-archivo', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
@@ -36,7 +35,7 @@ export default {
             payload.fecha = new Date(fecha).toISOString().split('T')[0];
             if (idProfesor) payload.idProfesor = idProfesor;
         }
-        
+
         return api.delete('/ausencias', { data: payload }).then(res => res.data);
     },
 
