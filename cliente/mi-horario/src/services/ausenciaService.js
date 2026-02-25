@@ -11,26 +11,20 @@ export default {
         return api.get('/ausencias/todas').then(res => res.data);
     },
 
-    // Crear una nueva ausencia
-    crearAusencia(datosAusencia, archivoAdjunto = null) {
-        if (archivoAdjunto) {
-            const formData = new FormData();
+    // NUEVO: Subir archivo y recibir el nombre generado por el backend
+    subirArchivo(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        
+        return api.post('/ausencias/upload-archivo', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        }).then(res => res.data);
+    },
 
-            Object.entries(datosAusencia).forEach(([clave, valor]) => {
-                if (valor !== null && valor !== undefined) {
-                    formData.append(clave, valor);
-                }
-            });
-
-            formData.append('archivo', archivoAdjunto);
-
-            return api.post('/ausencias', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            }).then(res => res.data);
-        }
-
+    // Crear una nueva ausencia (datosAusencia ya incluirá el nombre del archivo adjunto si lo hay)
+    crearAusencia(datosAusencia) {
         return api.post('/ausencias', datosAusencia).then(res => res.data);
     },
 

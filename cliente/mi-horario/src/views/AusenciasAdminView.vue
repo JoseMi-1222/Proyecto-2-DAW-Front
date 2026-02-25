@@ -42,7 +42,7 @@
                   <th class="ps-4">Profesor</th>
                   <th>Hora</th>
                   <th>Asignatura / Grupo</th>
-                  <th>Motivo</th>
+                  <th>Tareas</th>
                   <th class="text-end pe-4">Acciones</th>
                 </tr>
               </thead>
@@ -78,9 +78,21 @@
                   </td>
 
                   <td>
-                    <span class="text-muted fst-italic">
-                      "{{ ausencia.descripcion || ausencia.motivo || 'Sin motivo' }}"
-                    </span>
+                    <div class="d-flex flex-column gap-1">
+                      <span class="text-muted fst-italic">
+                        "{{ ausencia.descripcion || ausencia.motivo || 'Sin motivo' }}"
+                      </span>
+                      
+                      <div v-if="ausencia.archivoAdjunto" class="mt-1">
+                        <button 
+                          @click="descargarArchivo(ausencia.archivoAdjunto)" 
+                          class="btn btn-sm btn-outline-primary"
+                          title="Descargar tarea adjunta"
+                        >
+                          <i class="bi bi-paperclip"></i> Descargar Tarea
+                        </button>
+                      </div>
+                    </div>
                   </td>
 
                   <td class="text-end pe-4">
@@ -114,6 +126,7 @@ import { ref, onMounted, computed } from 'vue'
 import ausenciaService from '../services/ausenciaService'
 import MenuLateral from '../components/MenuLateral.vue'
 import ModalConfirmacion from '../components/ModalConfirmacion.vue'
+import api from '../axios' 
 
 const ausencias = ref([])
 const cargando = ref(true)
@@ -156,13 +169,11 @@ const ausenciasAgrupadas = computed(() => {
 
   let lista = ausencias.value
 
-  // 1. FILTRO (Ahora buscando dentro de horario.profesor)
   if (busqueda.value) {
     const q = busqueda.value.toLowerCase()
     lista = lista.filter(a => a.horario?.profesor?.nombre?.toLowerCase().includes(q))
   }
 
-  // 2. AGRUPAR
   const grupos = {}
   lista.forEach(aus => {
     const fechaStr = normalizarFecha(aus.fecha)
@@ -170,24 +181,20 @@ const ausenciasAgrupadas = computed(() => {
     grupos[fechaStr].push(aus)
   })
 
-  // 3. ORDENAR (Por nombre de profesor dentro del horario)
   Object.keys(grupos).forEach(fecha => {
     grupos[fecha].sort((a, b) => {
       const nA = (a.horario?.profesor?.nombre || '').toLowerCase()
       const nB = (b.horario?.profesor?.nombre || '').toLowerCase()
       
-      // Primero alfabético por profesor
       if (nA < nB) return -1
       if (nA > nB) return 1
 
-      // Si es el mismo, por hora
       const hA = a.horario?.franja?.horaInicio || ''
       const hB = b.horario?.franja?.horaInicio || ''
       return hA.localeCompare(hB)
     })
   })
 
-  // 4. ORDENAR FECHAS (Descendente)
   const fechasOrdenadas = Object.keys(grupos).sort((a, b) => new Date(b) - new Date(a))
   
   const resultado = {}
@@ -196,10 +203,8 @@ const ausenciasAgrupadas = computed(() => {
   return resultado
 })
 
-// --- FORMATO HORA (Quitar los segundos :00) ---
 const formatearHora = (hora) => {
   if (!hora) return '--:--'
-  // Si viene "08:15:00", devolvemos "08:15"
   return hora.substring(0, 5)
 }
 
@@ -220,6 +225,41 @@ const obtenerIniciales = (nombre) => {
   return nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
 }
 
+// --- DESCARGAR ARCHIVO ---
+const descargarArchivo = async (nombreArchivo) => {
+  try {
+    console.log("1. Intentando descargar:", nombreArchivo);
+    
+    const urlDescarga = `/ausencias/descargar-archivo/${encodeURIComponent(nombreArchivo)}`;
+    console.log("2. Pidiendo archivo a la ruta:", urlDescarga);
+
+    const response = await api.get(urlDescarga, {
+      responseType: 'blob' 
+    });
+
+    console.log("3. Archivo recibido del servidor. Preparando navegador...");
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    
+    const enlaceCiego = document.createElement('a'); 
+    
+    enlaceCiego.href = url;
+    
+    const nombreLimpio = nombreArchivo.substring(nombreArchivo.indexOf('_') + 1);
+    enlaceCiego.setAttribute('download', nombreLimpio);
+    
+    document.body.appendChild(enlaceCiego);
+    enlaceCiego.click(); 
+    
+    document.body.removeChild(enlaceCiego);
+    window.URL.revokeObjectURL(url);
+    console.log("4. ¡Descarga lanzada con éxito!");
+    
+  } catch (error) {
+    console.error("Error al descargar el archivo:", error);
+    alert("No se pudo descargar el archivo. Abre la consola (F12) para ver el motivo exacto.");
+  }
+}
+
 // --- ELIMINAR ---
 const confirmarEliminacion = (item) => {
   itemABorrar.value = item
@@ -231,7 +271,6 @@ const eliminarAusencia = async () => {
   if(!itemABorrar.value) return
 
   try {
-    // RECUPERAR ID PROFESOR CORRECTO DESDE EL OBJETO ANIDADO
     const idProf = itemABorrar.value.horario?.profesor?.idProfesor
     const fechaNorm = normalizarFecha(itemABorrar.value.fecha)
     
