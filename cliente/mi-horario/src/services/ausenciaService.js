@@ -11,7 +11,19 @@ export default {
         return api.get('/ausencias/todas').then(res => res.data);
     },
 
-    // Crear una nueva ausencia
+    // NUEVO: Subir archivo y recibir el nombre generado por el backend
+    subirArchivo(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        return api.post('/ausencias/upload-archivo', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        }).then(res => res.data);
+    },
+
+    // Crear una nueva ausencia (datosAusencia ya incluirá el nombre del archivo adjunto si lo hay)
     crearAusencia(datosAusencia) {
         return api.post('/ausencias', datosAusencia).then(res => res.data);
     },
@@ -24,7 +36,7 @@ export default {
             payload.fecha = new Date(fecha).toISOString().split('T')[0];
             if (idProfesor) payload.idProfesor = idProfesor;
         }
-        
+
         return api.delete('/ausencias', { data: payload }).then(res => res.data);
     },
 
