@@ -29,7 +29,7 @@ function emitirBusqueda() {
 
 <style scoped>
 .buscador-wrapper {
-  margin: 2rem auto 1rem auto; /* margen superior, centrado horizontal, espacio debajo */
+  margin: 2rem auto 1rem auto;
   padding: 0 1rem;
 }
 
@@ -50,7 +50,6 @@ function emitirBusqueda() {
   font-style: italic;
 }
 
-/* En móviles: input más pequeño si hace falta */
 @media (max-width: 576px) {
   .stylish-search input {
     font-size: 0.9rem;

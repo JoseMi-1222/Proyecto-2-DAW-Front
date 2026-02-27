@@ -57,7 +57,6 @@ const form = reactive({
 })
 
 function guardar() {
-  // Emitir los datos hacia el componente padre
   emit('guardar', {
     idProfesor: props.profesor.idProfesor,
     nombre: props.profesor.nombre,

@@ -14,7 +14,7 @@
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-bold">2. Instrucciones </label>
+            <label class="form-label fw-bold">2. Instrucciones</label>
             <input type="text" v-model="nuevaAusencia.motivo" class="form-control form-control-lg"
               placeholder="Ej: Tareas al profesor de guardia" />
           </div>
@@ -28,8 +28,9 @@
 
           <div class="col-12">
             <label class="form-label fw-bold">4. Selecciona las clases a las que faltarás</label>
-            <p class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>Puedes seleccionar varias horas
-              haciendo clic en ellas.</p>
+            <p class="text-muted small mb-2">
+              <i class="bi bi-info-circle me-1"></i>Todas tus clases vienen seleccionadas por defecto. Puedes hacer clic en ellas para desmarcarlas si vas a venir a alguna.
+            </p>
 
             <div v-if="!nuevaAusencia.fecha" class="alert alert-info py-2">
               <i class="bi bi-calendar-event me-2"></i>Por favor, selecciona una fecha para ver tus clases.
@@ -43,7 +44,7 @@
             <div v-else-if="clasesDelDia.length > 0" class="row row-cols-1 row-cols-md-3 g-2 mt-1">
               <div v-for="tramo in clasesDelDia" :key="tramo.id" class="col">
                 <div class="card h-100 clase-card border-2"
-                  :class="esSeleccionada(tramo) ? 'border-success bg-light' : 'border-light'"
+                  :class="esSeleccionada(tramo) ? 'border-success bg-success-subtle' : 'border-light bg-light opacity-50'"
                   @click="toggleSeleccion(tramo)">
                   <div class="card-body p-2">
                     <div class="d-flex justify-content-between align-items-start">
@@ -51,6 +52,7 @@
                         {{ tramo.materia || tramo.asignatura?.nombre }}
                       </h6>
                       <i v-if="esSeleccionada(tramo)" class="bi bi-check-circle-fill text-success ms-2"></i>
+                      <i v-else class="bi bi-circle text-muted ms-2"></i>
                     </div>
                     <p class="card-text small mb-1 text-muted">
                       <i class="bi bi-clock me-1"></i>{{ tramo.hora_inicio || tramo.franja?.horaInicio }} - {{
@@ -100,7 +102,6 @@ const nuevaAusencia = ref({
 })
 
 const clasesSeleccionadas = ref([])
-// NUEVA VARIABLE PARA EL ARCHIVO
 const archivoSeleccionado = ref(null) 
 
 const horarioCompleto = ref([])
@@ -160,6 +161,8 @@ watch(() => nuevaAusencia.value.fecha, (nuevaFecha) => {
     const horaB = b.hora_inicio || b.franja?.horaInicio || '00:00'
     return horaA > horaB ? 1 : -1
   })
+
+  clasesSeleccionadas.value = [...clasesDelDia.value]
 })
 
 function toggleSeleccion(tramo) {
@@ -175,7 +178,6 @@ function esSeleccionada(tramo) {
   return clasesSeleccionadas.value.includes(tramo)
 }
 
-// NUEVA FUNCIÓN: Captura el archivo del input
 function capturarArchivo(event) {
   archivoSeleccionado.value = event.target.files[0]
 }
@@ -188,13 +190,10 @@ async function crearAusencia() {
   try {
     let nombreArchivoGuardado = null;
 
-    // 1. Si hay un archivo seleccionado, lo subimos primero usando el servicio
     if (archivoSeleccionado.value) {
-      // Llamamos a nuestro servicio y nos devuelve el nombre del archivo
       nombreArchivoGuardado = await ausenciaService.subirArchivo(archivoSeleccionado.value);
     }
 
-    // 2. Preparamos y enviamos las ausencias
     const peticiones = clasesSeleccionadas.value.map(tramo => {
       const payload = {
         fecha: nuevaAusencia.value.fecha,
@@ -202,7 +201,7 @@ async function crearAusencia() {
         horaFin: tramo.hora_fin || tramo.franja?.horaFin,
         motivo: nuevaAusencia.value.motivo,
         idProfesor: props.idProfesor,
-        archivoAdjunto: nombreArchivoGuardado // Añadimos el nombre del archivo
+        archivoAdjunto: nombreArchivoGuardado 
       }
       return ausenciaService.crearAusencia(payload)
     })
@@ -211,12 +210,10 @@ async function crearAusencia() {
 
     emit('ausenciaCreada')
 
-    // 3. Limpiar formulario
     nuevaAusencia.value = { fecha: '', motivo: '' }
     clasesSeleccionadas.value = []
     archivoSeleccionado.value = null;
 
-    // Opcional: Limpiar el input file visualmente
     const fileInput = document.querySelector('input[type="file"]')
     if(fileInput) fileInput.value = ''
 

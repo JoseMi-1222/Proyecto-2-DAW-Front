@@ -133,18 +133,16 @@ const auth = useAuthStore()
 const mostrarModalPassword = ref(false)
 const listaProfesores = ref([])
 
-// Estados del Buscador
 const busquedaProfesor = ref('')
 const idProfesorSeleccionado = ref(null)
-const nombreProfesorSeleccionado = ref('') // Para mostrar nombre bonito tras seleccionar
+const nombreProfesorSeleccionado = ref('')
 const mostrarLista = ref(false)
 
-const profesorEncontrado = ref(null) // Para usuario NO admin
+const profesorEncontrado = ref(null)
 const cargandoId = ref(false)
 
 const esAdmin = computed(() => auth.usuario?.rol === 'administrador')
 
-// --- FILTRO INTELIGENTE ---
 const profesoresFiltrados = computed(() => {
   const termino = busquedaProfesor.value.toLowerCase().trim()
 
@@ -162,7 +160,6 @@ const profesoresFiltrados = computed(() => {
   }).slice(0, 12)
 })
 
-// --- ID FINAL A ENVIAR AL COMPONENTE HORARIO ---
 const idCalculado = computed(() => {
   if (esAdmin.value) {
     return idProfesorSeleccionado.value
@@ -177,11 +174,10 @@ onMounted(async () => {
   await cargarYBuscarProfesor()
 })
 
-// --- FUNCIONES DEL BUSCADOR ---
 const seleccionarProfesor = (profe) => {
   idProfesorSeleccionado.value = profe.idProfesor
   nombreProfesorSeleccionado.value = obtenerNombreCompleto(profe)
-  busquedaProfesor.value = nombreProfesorSeleccionado.value // Ponemos el nombre en el input
+  busquedaProfesor.value = nombreProfesorSeleccionado.value
   mostrarLista.value = false
 }
 
@@ -199,13 +195,11 @@ const obtenerIniciales = (nombre) => {
 
 const obtenerNombreCompleto = (profe) => `${profe.nombre} ${profe.apellido || ''}`.trim()
 
-// --- LÓGICA DE CARGA INICIAL ---
 async function cargarYBuscarProfesor() {
   cargandoId.value = true
   try {
     listaProfesores.value = await profesorService.obtenerProfesores()
 
-    // Lógica para autoseleccionar si NO es admin
     if (!esAdmin.value && auth.usuario) {
       const emailUser = auth.usuario.email?.toLowerCase().trim()
       const nombreUser = auth.usuario.nombre?.toLowerCase().trim()
@@ -239,8 +233,6 @@ async function cargarYBuscarProfesor() {
 
 <style scoped>
 .container-fluid { transition: all 0.3s ease; }
-
-/* Estilos de la Lista Flotante */
 .lista-flotante {
   position: absolute;
   top: 100%;
@@ -261,8 +253,6 @@ async function cargarYBuscarProfesor() {
 .lista-flotante li:hover {
   background-color: #f0f7ff;
 }
-
-/* Avatar circular para las iniciales */
 .avatar-circle {
   width: 32px;
   height: 32px;
@@ -272,16 +262,12 @@ async function cargarYBuscarProfesor() {
   justify-content: center;
   font-weight: bold;
 }
-
-/* Fondo transparente para detectar clics fuera */
 .fondo-transparente {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
   z-index: 999;
   cursor: default;
 }
-
-/* Ajuste responsive para la columna derecha */
 @media (min-width: 768px) {
   .border-start-md {
     border-left: 1px solid #dee2e6;

@@ -17,8 +17,8 @@
               @click="$emit('justificarDia', ausenciaDia.fecha)"
               :disabled="todasJustificadas(ausenciaDia.lstAusenciaFecha)"
             >
-              <i class="bi bi-check-circle me-1"></i>
-              {{ todasJustificadas(ausenciaDia.lstAusenciaFecha) ? 'Día Justificado' : 'Justificar Día' }}
+              <i class="bi" :class="todasJustificadas(ausenciaDia.lstAusenciaFecha) ? 'bi-check-circle' : 'bi-upload'"></i>
+              {{ todasJustificadas(ausenciaDia.lstAusenciaFecha) ? 'Día Justificado' : 'Subir Justificante' }}
             </button>
 
             <button class="btn btn-sm btn-danger border-0" 
@@ -37,7 +37,7 @@
                 <th>Asignatura</th>
                 <th>Aula</th>
                 <th>Curso</th>
-                <th>Motivo</th>
+                <th>Instrucciones</th>
                 <th class="text-center">Estado</th>
                 <th class="text-center">Acción</th>
               </tr>

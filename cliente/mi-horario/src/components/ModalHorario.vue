@@ -153,50 +153,40 @@ const props = defineProps({
 
 const emit = defineEmits(['cerrar', 'guardar-exito'])
 
-// --- ESTADO ---
 const horarioActual = ref([])
 const listaAsignaturas = ref([])
-const listaCursos = ref([]) // Lista de cursos disponibles
+const listaCursos = ref([])
 const cargando = ref(false)
 const guardando = ref(false)
 
-// Variables para edición
 const celdaEditando = ref(null) 
 const asignaturaSeleccionada = ref(null)
-const cursoSeleccionado = ref(null) // Curso elegido en el modal pequeño
+const cursoSeleccionado = ref(null)
 
-// Variables para el buscador
 const busquedaAsignatura = ref('')
 const mostrarLista = ref(false)
 
-// Configuración visual
 const diasSemana = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
 const mapaDias = {
   'L': 'LUNES', 'M': 'MARTES', 'X': 'MIERCOLES', 'MI': 'MIERCOLES',
   'J': 'JUEVES', 'V': 'VIERNES', 'S': 'SABADO', 'D': 'DOMINGO'
 }
-// Configuración de franjas horarias (MAÑANA Y TARDE)
 const franjasDefecto = [
-  // --- TURNO MAÑANA ---
   { id: 1, inicio: '08:15', fin: '09:15' },
   { id: 2, inicio: '09:15', fin: '10:15' },
   { id: 3, inicio: '10:15', fin: '11:15' },
-  // Recreo Mañana (11:15 - 11:45)
   { id: 4, inicio: '11:45', fin: '12:45' },
   { id: 5, inicio: '12:45', fin: '13:45' },
   { id: 6, inicio: '13:45', fin: '14:45' },
 
-  // --- TURNO TARDE (Tu horario) ---
-  { id: 7, inicio: '15:00', fin: '16:00' },  // de 3 a 4
-  { id: 8, inicio: '16:00', fin: '17:00' },  // de 4 a 5
-  { id: 9, inicio: '17:00', fin: '18:00' },  // de 5 a 6
-  // Recreo Tarde (18:00 - 18:15)
-  { id: 10, inicio: '18:15', fin: '19:15' }, // de 6:15 a 7:15
-  { id: 11, inicio: '19:15', fin: '20:15' }, // de 7:15 a 8:15
-  { id: 12, inicio: '20:15', fin: '21:15' }  // de 8:15 a 9:15
+  { id: 7, inicio: '15:00', fin: '16:00' },
+  { id: 8, inicio: '16:00', fin: '17:00' },
+  { id: 9, inicio: '17:00', fin: '18:00' },
+  { id: 10, inicio: '18:15', fin: '19:15' },
+  { id: 11, inicio: '19:15', fin: '20:15' },
+  { id: 12, inicio: '20:15', fin: '21:15' }
 ]
 
-// --- COMPUTED: Filtrado del buscador ---
 const asignaturasFiltradas = computed(() => {
   if (!busquedaAsignatura.value) return []
   const termino = busquedaAsignatura.value.toLowerCase()
@@ -205,22 +195,18 @@ const asignaturasFiltradas = computed(() => {
   )
 })
 
-// --- CARGA DE DATOS ---
 watch(() => props.visible, async (val) => {
   if (val && props.profesor) {
     cargando.value = true
     try {
-      // 1. Cargar asignaturas
       if (listaAsignaturas.value.length === 0) {
         listaAsignaturas.value = await horarioService.obtenerAsignaturas()
       }
       
-      // 2. Cargar cursos (NUEVO)
       if (listaCursos.value.length === 0) {
           listaCursos.value = await horarioService.obtenerCursos()
       }
 
-      // 3. Cargar horario
       horarioActual.value = await horarioService.obtenerHorarioProfesor(props.profesor.idProfesor)
     } catch (e) {
       console.error("Error cargando datos:", e)
@@ -230,19 +216,16 @@ watch(() => props.visible, async (val) => {
   }
 })
 
-// --- LÓGICA: Obtener Celda para pintar ---
 const getCelda = (diaColumna, franjaInicio) => {
   const [horaTabla, minTabla] = franjaInicio.split(':').map(Number)
 
   return horarioActual.value.find(h => {
     if (!h.franja) return false
     
-    // Normalizar día
     const diaBackRaw = h.dia ? h.dia.toUpperCase().trim() : ''
     const diaBackNormalizado = mapaDias[diaBackRaw] || diaBackRaw
     const coincideDia = diaBackNormalizado === diaColumna
 
-    // Normalizar hora
     let horaBack, minBack
     const val = h.franja.horaInicio
     if (Array.isArray(val)) { horaBack = val[0]; minBack = val[1] } 
@@ -253,26 +236,22 @@ const getCelda = (diaColumna, franjaInicio) => {
   })
 }
 
-// --- LÓGICA: Abrir Modal Edición ---
 const editarCelda = (dia, franja) => {
   const celda = getCelda(dia, franja.inicio)
   celdaEditando.value = { dia, franja }
   
   if (celda) {
-      // Si ya hay algo, rellenamos los campos
       asignaturaSeleccionada.value = celda.asignatura
-      cursoSeleccionado.value = celda.curso // Asignamos el curso actual
-      busquedaAsignatura.value = celda.asignatura.nombre // Ponemos el nombre en el input
+      cursoSeleccionado.value = celda.curso
+      busquedaAsignatura.value = celda.asignatura.nombre
   } else {
-      // Limpiamos si es nuevo
       asignaturaSeleccionada.value = null
       cursoSeleccionado.value = null
       busquedaAsignatura.value = ''
   }
-  mostrarLista.value = false // Lista oculta al inicio
+    mostrarLista.value = false
 }
 
-// --- LÓGICA: Seleccionar desde la lista del buscador ---
 const seleccionarAsignatura = (asig) => {
     asignaturaSeleccionada.value = asig
     if (asig) {
@@ -283,7 +262,6 @@ const seleccionarAsignatura = (asig) => {
     mostrarLista.value = false
 }
 
-// --- LÓGICA: Cerrar y Limpiar Modal Edición ---
 const cerrarEdicionCelda = () => {
   celdaEditando.value = null
   asignaturaSeleccionada.value = null
@@ -291,11 +269,9 @@ const cerrarEdicionCelda = () => {
   busquedaAsignatura.value = ''
 }
 
-// --- LÓGICA: Confirmar cambio localmente ---
 const confirmarEdicionCelda = () => {
   const { dia, franja } = celdaEditando.value
   
-  // 1. Eliminamos cualquier entrada previa en esa celda
   horarioActual.value = horarioActual.value.filter(h => {
     const diaBackRaw = h.dia ? h.dia.toUpperCase().trim() : ''
     const diaBackNormalizado = mapaDias[diaBackRaw] || diaBackRaw
@@ -309,11 +285,9 @@ const confirmarEdicionCelda = () => {
     return !(diaBackNormalizado === dia && horaBack === hTabla && minBack === mTabla)
   })
   
-  // 2. Si hay asignatura seleccionada, añadimos la nueva entrada
   if (asignaturaSeleccionada.value) {
     const [hTabla, mTabla] = franja.inicio.split(':').map(Number)
     
-    // Intentamos recuperar la ID de la franja real si existe en otra celda
     const entradaExistente = horarioActual.value.find(h => {
         let hBack, mBack
         const val = h.franja.horaInicio
@@ -329,14 +303,13 @@ const confirmarEdicionCelda = () => {
       franja: franjaObjeto,
       asignatura: asignaturaSeleccionada.value,
       profesor: { idProfesor: props.profesor.idProfesor }, 
-      curso: cursoSeleccionado.value // <-- Aquí guardamos el curso
+      curso: cursoSeleccionado.value
     })
   }
   
   cerrarEdicionCelda()
 }
 
-// --- GUARDAR EN BACKEND ---
 const guardarCambios = async () => {
   guardando.value = true
   try {
@@ -357,8 +330,6 @@ const cerrar = () => emit('cerrar')
 <style scoped>
 .modal.show { display: block; }
 .celda-horario:hover { background-color: #f8f9fa; }
-
-/* Estilos para la lista desplegable del buscador */
 .lista-flotante {
   position: absolute;
   top: 100%;

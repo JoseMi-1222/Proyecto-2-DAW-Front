@@ -45,10 +45,18 @@
       :ausencias="ausenciasOrdenadasFiltradas" 
       @eliminarDia="prepararEliminacion"
       @eliminarUna="prepararEliminacion"
-      @justificarDia="justificarAusenciasDia"
+      @justificarDia="pedirArchivoJustificante"
     />
 
   </div>
+
+  <input 
+    type="file" 
+    ref="inputJustificanteRef" 
+    style="display: none" 
+    accept=".pdf,.png,.jpg,.jpeg"
+    @change="subirYJustificar"
+  >
 
   <ModalMensaje 
     :visible="modalVisible" 
@@ -73,36 +81,34 @@ import horarioService from '../services/horarioService'
 import { useAuthStore } from '../stores/auth'
 
 import ModalMensaje from '../components/ModalMensaje.vue'
-import ModalConfirmacion from '../components/ModalConfirmacion.vue' // <--- IMPORTADO
+import ModalConfirmacion from '../components/ModalConfirmacion.vue'
 import MenuLateral from '../components/MenuLateral.vue'
 import FormularioCrearAusencia from '../components/FormularioCrearAusencia.vue'
 import TablaAusencias from '../components/TablaAusencias.vue'
 
 const auth = useAuthStore()
 
-// Estado
 const ausencias = ref([])
 const mostrarFormulario = ref(false)
 const idProfesorReal = ref(null)
 const cargandoId = ref(true)
 
-// Estado Confirmación Borrado
 const mostrarConfirmacion = ref(false)
 const itemParaEliminar = ref(null)
 
-// Filtros
+const inputJustificanteRef = ref(null)
+const fechaAJustificar = ref(null)
+
 const ausenciasFiltradas = ref([])
 const filtroDia = ref('')
 const filtroMes = ref('')
 const filtroAnio = ref('')
 
-// Modal Mensajes
 const modalVisible = ref(false)
 const modalTitulo = ref('')
 const modalMensaje = ref('')
 const modalTipo = ref('info')
 
-// --- LÓGICA DE INICIO ---
 onMounted(async () => {
   if (!auth.usuario?.email) {
     mostrarModal('Error', 'No hay usuario logueado', 'error')
@@ -122,7 +128,6 @@ onMounted(async () => {
   }
 })
 
-// --- CARGA DE DATOS ---
 const cargarAusencias = async () => {
   if (!idProfesorReal.value) return
 
@@ -136,18 +141,13 @@ const cargarAusencias = async () => {
   }
 }
 
-// --- LÓGICA DE ELIMINACIÓN CON MODAL ---
-
-// 1. Se llama desde la tabla al pulsar la papelera
 const prepararEliminacion = ({ id = null, fecha = null }) => {
-  // Guardamos qué queremos borrar y mostramos el modal
   itemParaEliminar.value = { id, fecha }
   mostrarConfirmacion.value = true
 }
 
-// 2. Se llama cuando el usuario confirma en el modal
 const ejecutarEliminacion = async () => {
-  mostrarConfirmacion.value = false // Cerramos modal confirmación
+  mostrarConfirmacion.value = false 
   
   if (!itemParaEliminar.value) return
 
@@ -164,18 +164,35 @@ const ejecutarEliminacion = async () => {
   }
 }
 
-// --- JUSTIFICAR ---
-const justificarAusenciasDia = async (fecha) => {
+
+const pedirArchivoJustificante = (fecha) => {
+  fechaAJustificar.value = fecha
+  inputJustificanteRef.value.click()
+}
+
+const subirYJustificar = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return 
+
   try {
-    await ausenciaService.justificarDia(fecha, idProfesorReal.value)
+    mostrarModal('Enviando...', 'Subiendo justificante médico al servidor...', 'info')
+    
+    const nombreArchivoGuardado = await ausenciaService.subirArchivo(file)
+    
+    await ausenciaService.justificarDia(fechaAJustificar.value, idProfesorReal.value, nombreArchivoGuardado)
+    
     await cargarAusencias()
-    mostrarModal('Éxito', 'Día justificado', 'success')
+    
+    mostrarModal('Enviado', 'Justificante enviado. Queda pendiente de revisión por el administrador.', 'success')
   } catch (error) {
-    mostrarModal('Error', 'Fallo al justificar', 'error')
+    console.error("Fallo al subir justificante:", error)
+    mostrarModal('Error', 'Fallo al subir el justificante. Inténtalo de nuevo.', 'error')
+  } finally {
+    event.target.value = ''
+    fechaAJustificar.value = null
   }
 }
 
-// --- UTILIDADES FORMULARIO ---
 const alCrearAusencia = () => {
   mostrarFormulario.value = false 
   mostrarModal('Éxito', 'Ausencia registrada.', 'success')
@@ -183,7 +200,6 @@ const alCrearAusencia = () => {
 }
 const manejarErrorFormulario = (msg) => mostrarModal('Error', msg, 'error')
 
-// --- FILTROS ---
 const filtrarPorFechaAvanzado = () => {
   const d = filtroDia.value.padStart(2,'0'), m = filtroMes.value.padStart(2,'0'), a = filtroAnio.value
   ausenciasFiltradas.value = ausencias.value.filter(x => {

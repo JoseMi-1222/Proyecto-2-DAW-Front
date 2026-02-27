@@ -84,13 +84,11 @@ const guardar = async () => {
       await profesorService.actualizarProfesor(props.profesorAEditar.idProfesor, { 
         nombre: nombre.value 
       })
-      // --- CAMBIO AQUÍ: Mensaje para actualizar ---
       emit('guardar-exito', 'Profesor actualizado correctamente.')
     } else {
       await profesorService.crearProfesor({ 
         nombre: nombre.value 
       })
-      // --- CAMBIO AQUÍ: Mensaje para crear ---
       emit('guardar-exito', 'Profesor creado con éxito.')
     }
     cerrar()

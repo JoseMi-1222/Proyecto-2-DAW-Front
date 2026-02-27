@@ -46,32 +46,30 @@ const emit = defineEmits();
 
 
 const props = defineProps({
-  profesor: Object,   // Recibe el objeto completo del profesor
+  profesor: Object,
   errores: Object,
   isLoading: Boolean
 })
 
 const form = reactive({
   email: props.profesor.usuario.email ,
-  password: '',  // La contraseña puede ser opcional
+  password: '',
   rol: props.profesor.usuario.rol
 })
 
-// Usar un watcher para actualizar el formulario cada vez que cambie el profesor
 watch(() => props.profesor, (nuevoProfesor) => {
-  form.email = nuevoProfesor?.usuario?.email || '';  // Actualiza el email con los nuevos valores
-  form.password = '';  // Puedes limpiar la contraseña si es necesario
-  form.rol = nuevoProfesor?.usuario?.rol || '';  // Actualiza el rol
-}, { immediate: true });  // Con 'immediate: true', se ejecutará también en la inicialización
+  form.email = nuevoProfesor?.usuario?.email || '';
+  form.password = '';
+  form.rol = nuevoProfesor?.usuario?.rol || '';
+}, { immediate: true });
 
-// Función para emitir el evento
 function enviar() {
   emit('actualizar', {
-    idUsuario: props.profesor.usuario.id, // Usar el ID del profesor (usuario)
-    nombre: props.profesor.nombre,          // Pasar el nombre del profesor (no del formulario)
-    email: form.email,                      // Pasar el email desde el formulario
-    rol: form.rol,                          // Pasar el rol desde el formulario
-    password: form.password || "",         // Si no hay contraseña, enviar una cadena vacía
+    idUsuario: props.profesor.usuario.id,
+    nombre: props.profesor.nombre,
+    email: form.email,
+    rol: form.rol,
+    password: form.password || "",
   });
 }
 

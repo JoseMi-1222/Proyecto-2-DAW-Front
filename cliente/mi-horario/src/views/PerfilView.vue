@@ -104,39 +104,31 @@ import ModalMensaje from '../components/ModalMensaje.vue'
 const router = useRouter()
 const auth = useAuthStore()
 
-// Estados básicos
 const imagenPerfil = ref(null)
 const imagenPorDefecto = 'https://img.freepik.com/vector-premium/icono-usuario-avatar-perfil-usuario-icono-persona-imagen-perfil-silueta-neutral-genero-adecuado_697711-1132.jpg'
 const cargando = ref(false)
 
-// Estados Password
 const passwordActual = ref('')
 const nuevaPassword = ref('')
 const confirmacionPassword = ref('')
 
-// Estado Modal
 const modal = ref({ visible: false, titulo: '', mensaje: '', tipo: 'info' })
 
-// --- UTILIDAD MODAL ---
 const mostrarModal = (titulo, mensaje, tipo = 'info') => {
   modal.value = { visible: true, titulo, mensaje, tipo }
 }
 
-// Validación
 const formularioValido = computed(() => {
   return passwordActual.value.length > 0 && 
          nuevaPassword.value.length >= 6 && 
          nuevaPassword.value === confirmacionPassword.value
 })
 
-// --- FUNCIONES ---
-
 function logout() {
   auth.logout()
   router.push('/login')
 }
 
-// Subir Imagen
 function subirImagen(event) {
   const archivo = event.target.files[0]
   if (!archivo) return
@@ -167,7 +159,6 @@ async function cargarImagenConToken() {
   }
 }
 
-// CAMBIAR PASSWORD Y CERRAR SESIÓN
 async function cambiarPassword() {
   cargando.value = true
 
@@ -178,17 +169,14 @@ async function cambiarPassword() {
       nuevaPassword.value
     )
 
-    // 1. Mostrar Modal de Éxito
     mostrarModal('Contraseña Actualizada', 'success')
     
-    // 2. Esperar 2 segundos para que el usuario lea el mensaje y luego Logout
     setTimeout(() => {
-      logout() // Llamamos a la función logout que definimos arriba
+      logout()
     }, 2500)
     
   } catch (err) {
     console.error(err)
-    // Mostrar error en el modal
     const msg = err.response?.data?.error || err.response?.data?.mensaje || 'La contraseña actual no es correcta.'
     mostrarModal('Error', msg, 'error')
   } finally {

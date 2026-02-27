@@ -94,18 +94,15 @@ const props = defineProps({
 
 const emit = defineEmits(['cerrar', 'guardar-exito'])
 
-// Datos del formulario
 const idProfesorSeleccionado = ref('')
 const email = ref('')
 const password = ref('')
 const profesoresDisponibles = ref([])
 
-// Estados
 const cargandoLista = ref(false)
 const procesando = ref(false)
 const error = ref('')
 
-// Cuando se abre el modal, cargamos la lista
 watch(() => props.visible, async (nuevoValor) => {
   if (nuevoValor) {
     limpiarFormulario()
@@ -146,7 +143,6 @@ const guardar = async () => {
       email.value,
       password.value
     )
-    // --- CAMBIO AQUÍ: Enviamos el mensaje de éxito ---
     emit('guardar-exito', 'Usuario asignado y vinculado correctamente.') 
     cerrar()
   } catch (e) {

@@ -23,7 +23,7 @@ const logoSrc = new URL('../assets/logo_iespsur.jpeg', import.meta.url).href
 .footer-global {
   border-top: 4px solid #2e7d32;
   background: linear-gradient(to right, #81c784, #66bb6a);
-  margin-top: auto; /* ayuda en flex layout */
+  margin-top: auto;
   width: 100%;
 }
 </style>
