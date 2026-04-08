@@ -65,8 +65,6 @@ import { useRoute } from 'vue-router'
 import MenuLateral from '../components/MenuLateral.vue'
 import Horario from '../components/Horario.vue'
 import ModalMensaje from '../components/ModalMensaje.vue'
-import TablaAusencias from '../components/TablaAusencias.vue' // Added import
-import ausenciaService from '../services/ausenciaService' // Added import
 
 import TablaAusencias from '../components/TablaAusencias.vue'
 import FormularioCrearUsuario from '../components/FormularioCrearUsuario.vue'

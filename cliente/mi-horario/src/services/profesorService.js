@@ -23,12 +23,13 @@ export default {
     return response.data
   },
 
-  async obtenerProfesoresGestion(busqueda, page = 0, size = 10) {
+  async obtenerProfesoresGestion(busqueda, page = 0, size = 10, verDesactivados = false) {
     const response = await api.get('/profesores/gestion', {
       params: {
         busqueda,
         page,
-        size
+        size,
+        verDesactivados 
       }
     })
     return response.data
@@ -55,6 +56,13 @@ export default {
 
   async obtenerProfesoresSinUsuario() {
     const response = await api.get('/profesores/sin-usuario')
+    return response.data
+  },
+
+  async cambiarEstadoProfesor(id, activo) {
+    const response = await api.patch(`/profesores/${id}/estado`, null, {
+      params: { activo }
+    })
     return response.data
   },
 

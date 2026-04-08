@@ -7,8 +7,22 @@
         <h2 class="fw-bold mb-1"><i class="bi bi-people-fill me-2"></i>Gestión de Profesorado</h2>
       </div>
       
-      <div class="d-flex gap-2">
-        <button class="btn btn-primary" @click="abrirModalCrear">
+      <div class="d-flex align-items-center gap-4">
+        <div class="form-check form-switch fs-5 mb-0">
+          <input 
+            class="form-check-input" 
+            type="checkbox" 
+            role="switch" 
+            id="verDesactivados" 
+            v-model="verDesactivados"
+            @change="cambiarFiltroEstado"
+          >
+          <label class="form-check-label fs-6 text-muted" for="verDesactivados">
+            Ver Desactivados
+          </label>
+        </div>
+
+        <button class="btn btn-primary shadow-sm" @click="abrirModalCrear">
           <i class="bi bi-plus-lg me-2"></i>Nuevo Profesor
         </button>
       </div>
@@ -49,28 +63,28 @@
               <th class="ps-4">Profesor</th>
               <th>Usuario / Email</th>
               <th>Asignaturas</th>
-              <th class="text-end pe-4" style="min-width: 150px;">Acciones</th>
+              <th class="text-center">Estado</th>
+              <th class="text-end pe-4" style="min-width: 180px;">Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="profesores.length === 0">
-              <td colspan="4" class="text-center py-4 text-muted">No se encontraron resultados.</td>
+              <td colspan="5" class="text-center py-4 text-muted">No se encontraron resultados.</td>
             </tr>
-            <tr v-for="prof in profesores" :key="prof.idProfesor">
+            <tr v-for="prof in profesores" :key="prof.idProfesor" :class="{ 'bg-light text-muted opacity-75': prof.activo === false }">
               <td class="ps-4">
                 <div class="d-flex align-items-center">
-                  <div class="avatar-circle me-3 bg-primary text-white">
+                  <div class="avatar-circle me-3 text-white" :class="prof.activo !== false ? 'bg-primary' : 'bg-secondary'">
                     {{ obtenerIniciales(prof.nombre) }}
                   </div>
                   <div>
-                    <div class="fw-bold">{{ prof.nombre }}</div>
+                    <div class="fw-bold" :class="{'text-decoration-line-through': prof.activo === false}">{{ prof.nombre }}</div>
                   </div>
                 </div>
               </td>
               <td>
                 <div v-if="prof.usuario">
                   <small class="d-block text-dark"><i class="bi bi-envelope me-1"></i>{{ prof.usuario.email }}</small>
-                  <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Activo</span>
                 </div>
                 <div v-else>
                   <span class="badge bg-secondary bg-opacity-10 text-secondary">Sin usuario</span>
@@ -79,10 +93,15 @@
               <td>
                 <small class="text-muted" v-if="!prof.horarios || prof.horarios.length === 0">Sin asignaturas</small>
                 <div v-else class="d-flex flex-wrap gap-1">
-                   <span v-for="(asig, i) in obtenerAsignaturasUnicas(prof.horarios)" :key="i" class="badge bg-light text-dark border">{{ asig }}</span>
+                   <span v-for="(asig, i) in obtenerAsignaturasUnicas(prof.horarios)" :key="i" class="badge bg-light border" :class="prof.activo !== false ? 'text-dark' : 'text-muted'">{{ asig }}</span>
                 </div>
               </td>
               
+              <td class="text-center">
+                <span v-if="prof.activo !== false" class="badge bg-success bg-opacity-10 text-success">Activo</span>
+                <span v-else class="badge bg-danger bg-opacity-10 text-danger">Inactivo</span>
+              </td>
+
               <td class="text-end pe-4">
                 <div class="d-flex justify-content-end gap-2">
                   <button class="btn btn-sm btn-light text-dark" title="Gestionar Horario" @click="abrirHorario(prof)">
@@ -93,7 +112,16 @@
                     <i class="bi bi-pencil"></i>
                   </button>
                   
-                  <button class="btn btn-sm btn-light text-danger" title="Eliminar" @click="confirmarBorrado(prof)">
+                  <button 
+                    class="btn btn-sm btn-light" 
+                    :class="prof.activo !== false ? 'text-warning' : 'text-success'"
+                    :title="prof.activo !== false ? 'Desactivar Profesor' : 'Activar Profesor'" 
+                    @click="alternarEstadoProfesor(prof)"
+                  >
+                    <i :class="prof.activo !== false ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'"></i>
+                  </button>
+
+                  <button class="btn btn-sm btn-light text-danger" title="Eliminar Definitivamente" @click="confirmarBorrado(prof)">
                     <i class="bi bi-trash"></i>
                   </button>
                 </div>
@@ -121,12 +149,10 @@
 
     <ModalConfirmacion 
       :visible="mostrarModalBorrar"
-      mensaje="¿Seguro que quieres eliminar a este profesor? Esta acción no se puede deshacer."
+      mensaje="¿Seguro que quieres eliminar a este profesor? Esta acción borrará todo su historial. Considera DESACTIVARLO en su lugar."
       @cerrar="mostrarModalBorrar = false"
       @confirmar="eliminarProfesor"
     />
-
-   
 
     <ModalHorario 
       :visible="mostrarModalHorario" 
@@ -148,6 +174,7 @@ import ModalHorario from '../components/ModalHorario.vue'
 
 const profesores = ref([])
 const busqueda = ref('')
+const verDesactivados = ref(false) // NUEVO: Estado del interruptor
 const paginaActual = ref(0)
 const totalPaginas = ref(0)
 const elementosPorPagina = ref(10)
@@ -161,8 +188,6 @@ const profesorSeleccionado = ref(null)
 const mostrarModalBorrar = ref(false)
 const profesorABorrar = ref(null)
 
-const mostrarModalUsuario = ref(false)
-
 const mostrarModalHorario = ref(false)
 const profesorHorarioSeleccionado = ref(null)
 
@@ -173,8 +198,9 @@ onMounted(() => {
 const cargarProfesores = async () => {
   cargando.value = true
   try {
+    // Si tu backend soporta filtrar por estado, deberías pasarle verDesactivados.value
     const data = await profesorService.obtenerProfesoresGestion(
-      busqueda.value, paginaActual.value, elementosPorPagina.value
+      busqueda.value, paginaActual.value, elementosPorPagina.value, verDesactivados.value
     )
     profesores.value = data.content
     totalPaginas.value = data.totalPages
@@ -193,6 +219,11 @@ const buscarConRetraso = () => {
   }, 500)
 }
 
+const cambiarFiltroEstado = () => {
+  paginaActual.value = 0
+  cargarProfesores()
+}
+
 const cambiarPagina = (delta) => {
   paginaActual.value += delta
   cargarProfesores()
@@ -207,6 +238,19 @@ const manejarExito = (mensajeRecibido) => {
   cargarProfesores()
   const texto = typeof mensajeRecibido === 'string' ? mensajeRecibido : 'Operación realizada con éxito'
   mostrarNotificacion(texto)
+}
+
+// --- NUEVA FUNCIÓN: ALTERNAR ESTADO ---
+const alternarEstadoProfesor = async (profesor) => {
+  const nuevoEstado = profesor.activo === false ? true : false;
+  try {
+    await profesorService.cambiarEstadoProfesor(profesor.idProfesor, nuevoEstado);
+    const mensaje = nuevoEstado ? "Profesor reactivado con éxito." : "Profesor desactivado con éxito.";
+    manejarExito(mensaje);
+  } catch (e) {
+    console.error(e);
+    alert("Error al cambiar el estado del profesor.");
+  }
 }
 
 const abrirModalCrear = () => {
@@ -235,15 +279,11 @@ const eliminarProfesor = async () => {
   
   try {
     await profesorService.eliminarProfesor(profesorABorrar.value.idProfesor)
-    manejarExito('Profesor eliminado correctamente.')
+    manejarExito('Profesor eliminado permanentemente.')
   } catch (e) {
     console.error(e)
-    alert("No se pudo eliminar. Puede que tenga horarios asignados.")
+    alert("No se pudo eliminar. Considera usar el botón de 'Desactivar' si tiene historial guardado.")
   }
-}
-
-const abrirModalUsuario = () => {
-  mostrarModalUsuario.value = true 
 }
 
 const abrirHorario = (profesor) => {
