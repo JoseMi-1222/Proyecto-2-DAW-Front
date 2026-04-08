@@ -142,16 +142,14 @@
 import { ref, computed } from 'vue'
 import datosService from '../services/datosService'
 import MenuLateral from '../components/MenuLateral.vue'
-import ModalConfirmacion from '../components/ModalConfirmacion.vue' // Tu modal nuevo
-import ModalMensaje from '../components/ModalMensaje.vue' // El modal de info que usas en MenuLateral
+import ModalConfirmacion from '../components/ModalConfirmacion.vue'
+import ModalMensaje from '../components/ModalMensaje.vue'
 
-// Estado básico
 const archivo = ref(null)
 const cargando = ref(false)
 const descargando = ref(false)
 const dragging = ref(false)
 
-// Estado Modales
 const mostrarConfirmacion = ref(false)
 const textoConfirmacion = ref('')
 
@@ -160,7 +158,6 @@ const tituloMensaje = ref('')
 const textoMensaje = ref('')
 const tipoMensaje = ref('info')
 
-// Computados
 const esJson = computed(() => archivo.value?.name.toLowerCase().endsWith('.json'))
 const iconoArchivo = computed(() => esJson.value ? 'bi-filetype-json text-warning' : 'bi-filetype-txt text-info')
 
@@ -170,7 +167,6 @@ const textoBotonImportar = computed(() => {
   return esJson.value ? 'Restaurar Copia de Seguridad' : 'Cargar Horarios Iniciales'
 })
 
-// --- MÉTODOS DE ARCHIVOS ---
 const seleccionarArchivo = (e) => {
   if (e.target.files.length) archivo.value = e.target.files[0]
 }
@@ -180,7 +176,6 @@ const soltarArchivo = (e) => {
   if (e.dataTransfer.files.length) archivo.value = e.dataTransfer.files[0]
 }
 
-// 1. PRIMER PASO: Pedir confirmación con tu modal
 const pedirConfirmacion = () => {
   if (!archivo.value) return
 
@@ -193,18 +188,15 @@ const pedirConfirmacion = () => {
   mostrarConfirmacion.value = true
 }
 
-// 2. SEGUNDO PASO: Ejecutar importación real (llamado desde el @confirmar del modal)
 const ejecutarImportacion = async () => {
-  mostrarConfirmacion.value = false // Cerramos el modal de pregunta
+  mostrarConfirmacion.value = false
   cargando.value = true
   
   try {
     const res = await datosService.importarDatos(archivo.value)
     
-    // Mostramos éxito con el ModalMensaje en vez de alert
     mostrarNotificacion('Importación Exitosa', res.data, 'success')
     
-    // Pequeño delay para que lean el mensaje antes de recargar
     setTimeout(() => {
         window.location.reload()
     }, 2000)
@@ -219,7 +211,6 @@ const ejecutarImportacion = async () => {
   }
 }
 
-// Helpers para exportación
 const descargarArchivo = async (metodoServicio, nombreDefault, extension) => {
   descargando.value = true
   try {
@@ -244,7 +235,6 @@ const descargarArchivo = async (metodoServicio, nombreDefault, extension) => {
 const descargarJson = () => descargarArchivo(datosService.exportarJson, 'backup_completo', 'json')
 const descargarTxt = () => descargarArchivo(datosService.exportarTxt, 'horario_instituto', 'txt')
 
-// --- LÓGICA MODAL MENSAJES (ÉXITO/ERROR) ---
 const mostrarNotificacion = (titulo, mensaje, tipo) => {
   tituloMensaje.value = titulo
   textoMensaje.value = mensaje

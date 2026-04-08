@@ -118,18 +118,15 @@ import modalmensaje from '../components/ModalMensaje.vue'
 const router = useRouter()
 const auth = useAuthStore()
 
-// --- ESTADO ---
 let bsOffcanvas = null
 const dropdownAbierto = ref(false)
 const cargando = ref(false)
 
-// Variables Modal
 const modalVisible = ref(false)
 const modalTitulo = ref('')
 const modalMensaje = ref('')
 const modalTipo = ref('info')
 
-// Computed para saber si es admin
 const esAdmin = computed(() => {
   const rol = auth.usuario?.rol || ''
   return rol.toUpperCase() === 'ADMINISTRADOR' || rol.toUpperCase() === 'ROLE_ADMINISTRADOR'
@@ -147,7 +144,6 @@ onUnmounted(() => {
   document.removeEventListener('click', cerrarDropdownAlClickeoFuera)
 })
 
-// --- FUNCIONES NAVEGACIÓN ---
 function abrirMenuLateral() {
   if(bsOffcanvas) bsOffcanvas.show()
 }
@@ -176,7 +172,6 @@ function logout() {
   router.push('/login')
 }
 
-// --- FUNCIONES MODAL ---
 function mostrarModal(titulo, mensaje, tipo = 'info') {
   modalTitulo.value = titulo
   modalMensaje.value = mensaje

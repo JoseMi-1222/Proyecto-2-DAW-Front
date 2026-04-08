@@ -22,16 +22,31 @@
     </div>
 
     <div v-else>
-      <div v-if="Object.keys(ausenciasAgrupadas).length === 0" class="alert alert-info text-center">
+      <div v-if="ausenciasAgrupadas.length === 0" class="alert alert-info text-center">
         No hay ausencias registradas (o no coinciden con la búsqueda).
       </div>
 
-      <div v-for="(listaAusencias, fecha) in ausenciasAgrupadas" :key="fecha" class="card mb-4 shadow-sm border-0">
+      <div v-for="grupo in ausenciasAgrupadas" :key="grupo.key" class="card mb-4 shadow-sm border-0">
+        
         <div class="card-header bg-light border-0 d-flex justify-content-between align-items-center py-3">
-          <h5 class="mb-0 fw-bold text-primary">
-            <i class="bi bi-calendar-event me-2"></i>{{ formatearFechaVisual(fecha) }}
+          <h5 class="mb-0 fw-bold text-primary d-flex align-items-center">
+            <i class="bi bi-calendar-event me-2"></i>
+            {{ formatearFechaVisual(grupo.fecha) }}
+            <span class="text-dark ms-2 fs-6"> - {{ grupo.profesorNombre }}</span>
           </h5>
-          <span class="badge bg-secondary">{{ listaAusencias.length }} ausencias</span>
+          
+          <div class="d-flex align-items-center gap-3">
+            <button 
+              v-if="tieneJustificantePendiente(grupo.ausencias)"
+              class="btn btn-sm btn-success fw-bold px-3 shadow-sm" 
+              title="Aprobar todo el día"
+              @click="aprobarJustificante(grupo.fecha, grupo.idProfesor)"
+            >
+              <i class="bi bi-check-circle-fill me-1"></i> Justificar Falta de Asistencia
+            </button>
+            
+            <span class="badge bg-secondary">{{ grupo.ausencias.length }} ausencias</span>
+          </div>
         </div>
         
         <div class="card-body p-0">
@@ -42,12 +57,14 @@
                   <th class="ps-4">Profesor</th>
                   <th>Hora</th>
                   <th>Asignatura / Grupo</th>
-                  <th>Motivo</th>
-                  <th class="text-end pe-4">Acciones</th>
+                  <th class="text-center">Tareas</th>
+                  <th class="text-center">Justificante</th>
+                  <th class="text-center">Estado</th>
+                  <th class="text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="ausencia in listaAusencias" :key="ausencia.id">
+                <tr v-for="ausencia in grupo.ausencias" :key="ausencia.id">
                   
                   <td class="ps-4">
                     <div class="d-flex align-items-center">
@@ -77,16 +94,45 @@
                     </small>
                   </td>
 
-                  <td>
-                    <span class="text-muted fst-italic">
-                      "{{ ausencia.descripcion || ausencia.motivo || 'Sin motivo' }}"
+                  <td class="text-center">
+                    <div class="d-flex flex-column gap-1 align-items-center">
+                      <span class="text-muted fst-italic text-wrap" style="max-width: 200px;">
+                        "{{ ausencia.descripcion || ausencia.motivo || 'Sin Instrucciones' }}"
+                      </span>
+                      <button 
+                        v-if="ausencia.archivoAdjunto"
+                        @click="descargarArchivo(ausencia.archivoAdjunto)" 
+                        class="btn btn-sm btn-outline-primary mt-1"
+                        title="Descargar tarea adjunta"
+                      >
+                        <i class="bi bi-paperclip"></i> Tarea
+                      </button>
+                    </div>
+                  </td>
+
+                  <td class="text-center">
+                    <button 
+                      v-if="ausencia.justificante"
+                      @click="descargarArchivo(ausencia.justificante)" 
+                      class="btn btn-sm btn-outline-info"
+                      title="Descargar justificante médico/legal"
+                    >
+                      <i class="bi bi-file-medical"></i> Ver Justificante
+                    </button>
+                    <span v-else class="text-muted small">—</span>
+                  </td>
+
+                  <td class="text-center">
+                    <span class="badge rounded-pill" 
+                          :class="ausencia.justificada ? 'bg-success' : 'bg-warning text-dark'">
+                      {{ ausencia.justificada ? 'Aprobada' : 'Pendiente' }}
                     </span>
                   </td>
 
-                  <td class="text-end pe-4">
+                  <td class="text-center">
                     <button 
                       class="btn btn-sm btn-outline-danger border-0" 
-                      title="Eliminar"
+                      title="Eliminar Ausencia"
                       @click="confirmarEliminacion(ausencia)"
                     >
                       <i class="bi bi-trash-fill"></i>
@@ -114,6 +160,7 @@ import { ref, onMounted, computed } from 'vue'
 import ausenciaService from '../services/ausenciaService'
 import MenuLateral from '../components/MenuLateral.vue'
 import ModalConfirmacion from '../components/ModalConfirmacion.vue'
+import api from '../axios' 
 
 const ausencias = ref([])
 const cargando = ref(true)
@@ -138,7 +185,6 @@ const cargarDatos = async () => {
   }
 }
 
-// --- NORMALIZACIÓN FECHAS ---
 const normalizarFecha = (fecha) => {
   if (!fecha) return 'Sin Fecha'
   if (Array.isArray(fecha)) {
@@ -150,56 +196,55 @@ const normalizarFecha = (fecha) => {
   return fecha
 }
 
-// --- AGRUPACIÓN Y ORDENACIÓN ---
 const ausenciasAgrupadas = computed(() => {
-  if (!ausencias.value) return {}
+  if (!ausencias.value) return []
 
   let lista = ausencias.value
 
-  // 1. FILTRO (Ahora buscando dentro de horario.profesor)
   if (busqueda.value) {
     const q = busqueda.value.toLowerCase()
     lista = lista.filter(a => a.horario?.profesor?.nombre?.toLowerCase().includes(q))
   }
 
-  // 2. AGRUPAR
-  const grupos = {}
+  const gruposMap = new Map()
+  
   lista.forEach(aus => {
     const fechaStr = normalizarFecha(aus.fecha)
-    if (!grupos[fechaStr]) grupos[fechaStr] = []
-    grupos[fechaStr].push(aus)
+    const idProf = aus.horario?.profesor?.idProfesor || 0
+    const profName = aus.horario?.profesor?.nombre || 'Desconocido'
+    
+    const key = `${fechaStr}_${idProf}`
+    
+    if (!gruposMap.has(key)) {
+      gruposMap.set(key, {
+        key: key,
+        fecha: fechaStr,
+        idProfesor: idProf,
+        profesorNombre: profName,
+        ausencias: []
+      })
+    }
+    gruposMap.get(key).ausencias.push(aus)
   })
 
-  // 3. ORDENAR (Por nombre de profesor dentro del horario)
-  Object.keys(grupos).forEach(fecha => {
-    grupos[fecha].sort((a, b) => {
-      const nA = (a.horario?.profesor?.nombre || '').toLowerCase()
-      const nB = (b.horario?.profesor?.nombre || '').toLowerCase()
-      
-      // Primero alfabético por profesor
-      if (nA < nB) return -1
-      if (nA > nB) return 1
-
-      // Si es el mismo, por hora
-      const hA = a.horario?.franja?.horaInicio || ''
-      const hB = b.horario?.franja?.horaInicio || ''
-      return hA.localeCompare(hB)
-    })
-  })
-
-  // 4. ORDENAR FECHAS (Descendente)
-  const fechasOrdenadas = Object.keys(grupos).sort((a, b) => new Date(b) - new Date(a))
+  const resultado = Array.from(gruposMap.values())
   
-  const resultado = {}
-  fechasOrdenadas.forEach(key => resultado[key] = grupos[key])
+  resultado.sort((a, b) => {
+    const dateA = new Date(a.fecha)
+    const dateB = new Date(b.fecha)
+    if (dateB - dateA !== 0) return dateB - dateA
+    return a.profesorNombre.localeCompare(b.profesorNombre)
+  })
   
   return resultado
 })
 
-// --- FORMATO HORA (Quitar los segundos :00) ---
+const tieneJustificantePendiente = (listaAusencias) => {
+  return listaAusencias.some(a => a.justificante && !a.justificada)
+}
+
 const formatearHora = (hora) => {
   if (!hora) return '--:--'
-  // Si viene "08:15:00", devolvemos "08:15"
   return hora.substring(0, 5)
 }
 
@@ -220,7 +265,46 @@ const obtenerIniciales = (nombre) => {
   return nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
 }
 
-// --- ELIMINAR ---
+const descargarArchivo = async (nombreArchivo) => {
+  try {
+    const urlDescarga = `/ausencias/descargar-archivo/${encodeURIComponent(nombreArchivo)}`;
+    const response = await api.get(urlDescarga, { responseType: 'blob' });
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const enlaceCiego = document.createElement('a'); 
+    
+    enlaceCiego.href = url;
+    
+    const nombreLimpio = nombreArchivo.substring(nombreArchivo.indexOf('_') + 1);
+    enlaceCiego.setAttribute('download', nombreLimpio);
+    
+    document.body.appendChild(enlaceCiego);
+    enlaceCiego.click(); 
+    
+    document.body.removeChild(enlaceCiego);
+    window.URL.revokeObjectURL(url);
+    
+  } catch (error) {
+    console.error("Error al descargar el archivo:", error);
+    alert("No se pudo descargar el archivo.");
+  }
+}
+
+const aprobarJustificante = async (fechaNorm, idProf) => {
+  try {
+    await api.patch('/ausencias/aprobar-justificante', {
+      fecha: fechaNorm,
+      idProfesor: idProf
+    });
+    
+    await cargarDatos();
+    
+  } catch (error) {
+    console.error("Error al aprobar justificante:", error);
+    alert("Error al aprobar el justificante.");
+  }
+}
+
 const confirmarEliminacion = (item) => {
   itemABorrar.value = item
   mostrarModal.value = true
@@ -231,7 +315,6 @@ const eliminarAusencia = async () => {
   if(!itemABorrar.value) return
 
   try {
-    // RECUPERAR ID PROFESOR CORRECTO DESDE EL OBJETO ANIDADO
     const idProf = itemABorrar.value.horario?.profesor?.idProfesor
     const fechaNorm = normalizarFecha(itemABorrar.value.fecha)
     

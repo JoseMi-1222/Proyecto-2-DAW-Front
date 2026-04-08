@@ -1,11 +1,12 @@
 <template>
   <div class="formulario-container">
     <h6 class="titulo-centrado">
-      Modificar usuario para:
+      Crear usuario para:
     </h6>
     <p class="titulo-centrado fw-bold ">
       {{ profesor.nombre }}
     </p>
+
 
     <div class="mb-2">
       <label class="form-label">Email</label>
@@ -30,20 +31,16 @@
     </div>
 
     <div class="d-flex gap-2">
-      <button class="btn btn-primary w-100" :disabled="isLoading" @click="enviar">
-        {{ isLoading ? 'Guardando...' : 'Guardar cambios' }}
+      <button class="btn btn-primary w-100" :disabled="isLoading" @click="guardar">
+        {{ isLoading ? 'Guardando...' : 'Guardar usuario' }}
       </button>
+
     </div>
   </div>
 </template>
 
-
-
 <script setup>
-import { reactive, watch } from 'vue'
-
-const emit = defineEmits();
-
+import { reactive } from 'vue'
 
 const props = defineProps({
   profesor: Object,
@@ -51,26 +48,22 @@ const props = defineProps({
   isLoading: Boolean
 })
 
+const emit = defineEmits('guardar')
+
 const form = reactive({
-  email: props.profesor.usuario.email ,
+  email: '',
   password: '',
-  rol: props.profesor.usuario.rol
+  rol: ''
 })
 
-watch(() => props.profesor, (nuevoProfesor) => {
-  form.email = nuevoProfesor?.usuario?.email || '';
-  form.password = '';
-  form.rol = nuevoProfesor?.usuario?.rol || '';
-}, { immediate: true });
-
-function enviar() {
-  emit('actualizar', {
-    idUsuario: props.profesor.usuario.id,
+function guardar() {
+  emit('guardar', {
+    idProfesor: props.profesor.idProfesor,
     nombre: props.profesor.nombre,
     email: form.email,
-    rol: form.rol,
-    password: form.password || "",
-  });
+    password: form.password,
+    rol: form.rol
+  })
 }
 
 

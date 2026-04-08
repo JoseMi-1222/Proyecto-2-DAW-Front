@@ -60,14 +60,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue' // Added computed and watch
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import MenuLateral from '../components/MenuLateral.vue'
 import Horario from '../components/Horario.vue'
 import ModalMensaje from '../components/ModalMensaje.vue'
-// Removed import AusenciasProfesor from '../components/AusenciasProfesor.vue'
 import TablaAusencias from '../components/TablaAusencias.vue' // Added import
 import ausenciaService from '../services/ausenciaService' // Added import
+
+import TablaAusencias from '../components/TablaAusencias.vue'
+import FormularioCrearUsuario from '../components/FormularioCrearUsuario.vue'
+import FormularioEditarUsuario from '../components/FormularioEditarUsuario.vue'
+import FormularioCrearAusencia from '../components/FormularioCrearAusencia.vue'
+import ausenciaService from '../services/ausenciaService'
+
 import profesorService from '../services/profesorService'
 import usuarioService from '../services/usuarioService'
 
@@ -81,7 +87,7 @@ const formularioActivo = ref(null)
 const erroresFormulario = ref({})
 const isLoading = ref(false)
 const ausenciasKey = ref(Date.now())
-const ausencias = ref([]) // Added to store absences
+const ausencias = ref([])
 
 const imagenPorDefecto = 'https://img.freepik.com/vector-premium/icono-usuario-avatar-perfil-usuario-icono-persona-imagen-perfil-silueta-neutral-genero-adecuado_697711-1132.jpg'
 
@@ -106,11 +112,10 @@ async function obtenerDatosProfesor() {
     try {
         profesor.value = await profesorService.obtenerProfesor(idProfesor)
         if (!profesor.value.usuario || !profesor.value.usuario.imagen) {
-            imagenPerfil.value = null  // Limpiar imagen si no hay usuario o imagen
+            imagenPerfil.value = null
         } else {
             await cargarImagen()
         }
-        // Load absences if user exists
         if(profesor.value.usuario?.id) {
             cargarAusencias(profesor.value.usuario.id)
         }
@@ -120,7 +125,6 @@ async function obtenerDatosProfesor() {
     }
 }
 
-// Function to load absences
 async function cargarAusencias(idUsuario) {
   try {
     const data = await ausenciaService.obtenerAusencias(idUsuario)
@@ -131,13 +135,11 @@ async function cargarAusencias(idUsuario) {
   }
 }
 
-// Computed property for ordered absences
 const ausenciasOrdenadas = computed(() =>
   [...ausencias.value].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
 )
 
 
-// Function to delete absence (Day or Single)
 const eliminarAusencia = async ({ id = null, fecha = null }) => {
   const idUsuario = profesor.value?.usuario?.id
     const idProfesorReal = profesor.value?.idProfesor
@@ -158,7 +160,6 @@ const eliminarAusencia = async ({ id = null, fecha = null }) => {
   }
 }
 
-// Function to justify absences
 async function justificarAusenciasDia(fecha) {
   const idUsuario = profesor.value?.usuario?.id
     const idProfesorReal = profesor.value?.idProfesor
@@ -242,8 +243,6 @@ async function guardarUsuario(datosFormulario) {
 
         if (error.response?.status === 400 && error.response.data) {
             erroresFormulario.value = error.response.data
-
-            // Mostrar mensaje si el backend devuelve "mensaje"
             const mensaje = error.response.data.mensaje || 'Error correo no valido.'
             mostrarModal(' Error', mensaje, 'error')
         } else {
@@ -319,7 +318,6 @@ const mostrarFormularioAusencia = ref(false)
 function onAusenciaCreada() {
     mostrarModal(' Ausencia creada', 'La ausencia fue registrada correctamente.', 'success')
     mostrarFormularioAusencia.value = false
-    // Reload absences after creation
     if(profesor.value?.usuario?.id) {
         cargarAusencias(profesor.value.usuario.id)
     }

@@ -44,8 +44,7 @@
   }
 })
 
-  
-  // Agregá tu lógica para guardar o modificar si querés manejarla desde aquí
+
   function guardarUsuario(payload) {
     console.log('Guardar (crear):', payload)
   }

@@ -1,21 +1,12 @@
-<!-- src/components/Menu.vue -->
 <template>
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top w-100 shadow">
     <div class="container-fluid">
-
-      <!-- Logo -->
       <router-link to="/home" class="navbar-brand d-flex align-items-center">
         <img :src="logo" alt="Logo" height="36" class="me-2" />
-
-        <!-- Título completo en escritorio -->
         <span class="d-none d-lg-inline titulo-app">Horario IES Polígono Sur</span>
-
-        <!-- Título reducido en móvil -->
         <span class="d-inline d-lg-none titulo-app">Polígono Sur</span>
       </router-link>
 
-
-      <!-- Botón de perfil solo en móvil -->
       <ul class="navbar-nav d-lg-none ms-auto">
         <li class="nav-item">
           <router-link to="/perfil" class="nav-link p-0">
@@ -36,17 +27,11 @@
 
       <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
         <ul class="navbar-nav">
-
-          <!-- DROPDOWN DE PERFIL -->
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="perfilDropdown" role="button"
               data-bs-toggle="dropdown" aria-expanded="false">
-
-              <!-- Imagen -->
               <img :src="imagenPerfil || imagenPorDefecto" class="rounded-circle me-2"
                 style="width: 32px; height: 32px; object-fit: cover;" />
-
-              <!-- Nombre: comienza siempre alineado a la izquierda -->
               <span class="nombre-usuario" :title="auth.usuario.nombre">
                 {{ auth.usuario.nombre }}
               </span>
@@ -78,7 +63,6 @@
     </div>
   </nav>
 
-  <!-- Modal cambio de contraseña -->
   <div v-if="mostrarModalPassword" class="modal-overlay">
     <div class="modal-content modal-warning">
       <h5 class="mb-3">🔐 Cambiar Contraseña</h5>
@@ -119,7 +103,6 @@ const imagenPerfil = ref(null)
 const router = useRouter()
 const auth = useAuthStore()
 
-// 👇 Modal de mensajes
 const modalVisible = ref(false)
 const modalTitulo = ref('')
 const modalMensaje = ref('')
@@ -201,7 +184,6 @@ async function cambiarPassword() {
     const data = await usuarioService.cambiarContrasena(auth.usuario.id, nuevaPassword.value)
     console.log('Respuesta del backend:', data)
 
-    // Actualiza auth si fuera necesario
     auth.usuario.cambiarContraseña = false
     localStorage.setItem('usuario', JSON.stringify(auth.usuario))
 
@@ -223,27 +205,22 @@ async function cambiarPassword() {
 
 
 <style scoped>
-/* Mostrar dropdown al pasar el mouse (solo en escritorio) */
 @media (min-width: 992px) {
   .navbar {
   padding-left: 1rem;
   padding-right: 1rem;
   height: 64px;
-  z-index: 1055; /* Añade esto */
+  z-index: 1055;
 }
 
 
 }
-
-/* Centrar dropdown en móviles y alinear mejor */
 .dropdown-menu {
   right: 0;
   left: auto;
   transform: none;
 
 }
-
-/* Logo y título bien alineados */
 .navbar-brand {
   display: flex;
   align-items: center;
@@ -253,24 +230,17 @@ async function cambiarPassword() {
   height: 36px;
   width: auto;
 }
-
-/* Nombre del usuario con truncamiento */
 .nombre-usuario {
   font-size: 0.95rem;
   min-width: 100px;
-  /* Espacio mínimo reservado */
   max-width: auto;
-  /* No crecer más allá de esto */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   display: inline-block;
-  /* Asegura que respeta el ancho */
 }
 
 
-
-/* Ajustes de navbar general */
 .navbar {
   padding-left: 1rem;
   padding-right: 1rem;

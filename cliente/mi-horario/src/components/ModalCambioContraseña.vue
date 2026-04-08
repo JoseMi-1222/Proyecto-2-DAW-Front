@@ -2,7 +2,6 @@
   <div v-if="visible" class="modal-overlay">
     <div class="modal-content modal-warning">
       <h5 class="mb-3">⚠️ Cambio de Contraseña Obligatorio</h5>
-      <!-- Mensaje de error -->
       <div v-if="error" class="text-danger mb-2 text-start" style="font-size: 0.9rem;">
         {{ error }}
       </div>
@@ -59,7 +58,6 @@ function cerrarModal() {
 async function cambiar() {
   error.value = ''
 
-  // Validación (puedes activarla si la necesitas)
   if (!nuevaPassword.value || nuevaPassword.value.length < 6) {
     error.value = 'La contraseña debe tener al menos 6 caracteres'
     return
@@ -78,18 +76,17 @@ async function cambiar() {
     console.log(' Respuesta del backend:', response)
     console.log('📨 Datos:', response.data)
 
-    // Actualizar auth store y localStorage
     auth.usuario.cambiarContraseña = false
     localStorage.setItem('usuario', JSON.stringify(auth.usuario))
 
     emit('cerrar')
 
-    mostrarModal('Contraseña Modificada', 'Contraseña cambiada correctamente', 'success') // modalmensaje
+    mostrarModal('Contraseña Modificada', 'Contraseña cambiada correctamente', 'success')
   } catch (err) {
     console.error('Error al cambiar contraseña:', err)
     const mensajeError = err.response?.data?.mensaje || 'Error al cambiar la contraseña'
     error.value = mensajeError
-    mostrarModal('Error al cambiar contraseña', mensajeError, 'error') // modalmensaje
+    mostrarModal('Error al cambiar contraseña', mensajeError, 'error')
   }
 }
 

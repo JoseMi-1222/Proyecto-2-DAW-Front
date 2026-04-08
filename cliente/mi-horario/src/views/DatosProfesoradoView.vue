@@ -155,7 +155,6 @@ const cargando = ref(false)
 const mensajeExito = ref('') 
 let timeoutBusqueda = null
 
-// Estado Modales
 const mostrarModalProfe = ref(false)
 const profesorSeleccionado = ref(null) 
 
@@ -164,7 +163,6 @@ const profesorABorrar = ref(null)
 
 const mostrarModalUsuario = ref(false)
 
-// Estado Modal Horario
 const mostrarModalHorario = ref(false)
 const profesorHorarioSeleccionado = ref(null)
 
@@ -172,7 +170,6 @@ onMounted(() => {
   cargarProfesores()
 })
 
-// --- CARGA DE DATOS ---
 const cargarProfesores = async () => {
   cargando.value = true
   try {
@@ -201,7 +198,6 @@ const cambiarPagina = (delta) => {
   cargarProfesores()
 }
 
-// --- GESTIÓN DE NOTIFICACIONES ---
 const mostrarNotificacion = (msg) => {
   mensajeExito.value = msg
   setTimeout(() => { mensajeExito.value = '' }, 3000)
@@ -213,7 +209,6 @@ const manejarExito = (mensajeRecibido) => {
   mostrarNotificacion(texto)
 }
 
-// --- ACCIONES DE CREAR / EDITAR PROFESOR ---
 const abrirModalCrear = () => {
   profesorSeleccionado.value = null
   mostrarModalProfe.value = true
@@ -229,7 +224,6 @@ const cerrarModalProfe = () => {
   profesorSeleccionado.value = null
 }
 
-// --- ACCIONES DE BORRAR ---
 const confirmarBorrado = (profesor) => {
   profesorABorrar.value = profesor
   mostrarModalBorrar.value = true
@@ -248,18 +242,15 @@ const eliminarProfesor = async () => {
   }
 }
 
-// --- ACCIONES DE USUARIO ---
 const abrirModalUsuario = () => {
   mostrarModalUsuario.value = true 
 }
 
-// --- ACCIONES DE HORARIO ---
 const abrirHorario = (profesor) => {
   profesorHorarioSeleccionado.value = profesor
   mostrarModalHorario.value = true
 }
 
-// --- HELPERS ---
 const obtenerAsignaturasUnicas = (horarios) => {
   if (!horarios) return []
   const asignaturas = horarios.map(h => h.asignatura?.nombre).filter(n => n)
@@ -273,11 +264,10 @@ const obtenerIniciales = (nombre) => {
 </script>
 
 <style scoped>
-/* VOLVEMOS AL ESTILO ORIGINAL (ALINEADO IZQUIERDA) */
 .contenedor-gestion { 
   margin-top: 80px; 
   padding: 20px 50px; 
-  margin-left: 250px; /* Margen para el menú lateral */
+  margin-left: 250px;
 }
 
 @media (max-width: 768px) { 

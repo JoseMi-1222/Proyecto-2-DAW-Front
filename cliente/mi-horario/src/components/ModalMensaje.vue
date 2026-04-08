@@ -60,7 +60,6 @@
     transition: all 0.3s ease;
   }
   
-  /* Tipos de modal */
   .modal-success {
     border-left: 8px solid #198754;
   }

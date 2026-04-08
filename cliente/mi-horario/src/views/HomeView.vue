@@ -28,18 +28,28 @@
               <input 
                 type="text" 
                 class="form-control border-start-0 ps-0" 
-                placeholder="Escribe un nombre..." 
+                placeholder="Escribe o despliega la lista..." 
                 v-model="busquedaProfesor"
                 @focus="mostrarLista = true"
                 @input="mostrarLista = true"
+                @keydown.down.prevent="mostrarLista = true"
                 autocomplete="off"
               >
+              <button
+                class="btn btn-outline-secondary border-start-0"
+                type="button"
+                @click="mostrarLista = !mostrarLista"
+                :aria-expanded="mostrarLista"
+                title="Mostrar lista de profesorado"
+              >
+                <i class="bi" :class="mostrarLista ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </button>
               <button v-if="idProfesorSeleccionado" class="btn btn-outline-secondary border-start-0" @click="limpiarSeleccion">
                 <i class="bi bi-x-lg"></i>
               </button>
             </div>
 
-            <div v-if="mostrarLista && busquedaProfesor" class="lista-flotante shadow rounded border">
+            <div v-if="mostrarLista" class="lista-flotante shadow rounded border">
               <ul class="list-unstyled mb-0">
                 <li 
                   v-for="profe in profesoresFiltrados" 
@@ -51,13 +61,14 @@
                     {{ obtenerIniciales(profe.nombre) }}
                   </div>
                   <div>
-                    <div class="fw-bold text-dark">{{ profe.nombre }} {{ profe.apellido || '' }}</div>
+                    <div class="fw-bold text-dark">{{ obtenerNombreCompleto(profe) }}</div>
                     <small class="text-muted" style="font-size: 0.75rem;">{{ profe.email }}</small>
                   </div>
                 </li>
                 
                 <li v-if="profesoresFiltrados.length === 0" class="p-3 text-center text-muted small">
-                  <i class="bi bi-emoji-frown me-1"></i> No se encuentran coincidencias
+                  <i class="bi bi-emoji-frown me-1"></i>
+                  {{ busquedaProfesor ? 'No se encuentran coincidencias' : 'No hay profesorado disponible' }}
                 </li>
               </ul>
             </div>
@@ -122,29 +133,33 @@ const auth = useAuthStore()
 const mostrarModalPassword = ref(false)
 const listaProfesores = ref([])
 
-// Estados del Buscador
 const busquedaProfesor = ref('')
 const idProfesorSeleccionado = ref(null)
-const nombreProfesorSeleccionado = ref('') // Para mostrar nombre bonito tras seleccionar
+const nombreProfesorSeleccionado = ref('')
 const mostrarLista = ref(false)
 
-const profesorEncontrado = ref(null) // Para usuario NO admin
+const profesorEncontrado = ref(null)
 const cargandoId = ref(false)
 
 const esAdmin = computed(() => auth.usuario?.rol === 'administrador')
 
-// --- FILTRO INTELIGENTE ---
 const profesoresFiltrados = computed(() => {
-  if (!busquedaProfesor.value) return []
-  
-  const termino = busquedaProfesor.value.toLowerCase()
-  return listaProfesores.value.filter(p => {
-    const nombreCompleto = `${p.nombre} ${p.apellido || ''}`.toLowerCase()
+  const termino = busquedaProfesor.value.toLowerCase().trim()
+
+  const profesoresOrdenados = [...listaProfesores.value].sort((a, b) =>
+    obtenerNombreCompleto(a).localeCompare(obtenerNombreCompleto(b), 'es', { sensitivity: 'base' })
+  )
+
+  if (!termino) {
+    return profesoresOrdenados.slice(0, 200)
+  }
+
+  return profesoresOrdenados.filter(p => {
+    const nombreCompleto = obtenerNombreCompleto(p).toLowerCase()
     return nombreCompleto.includes(termino) || (p.email && p.email.toLowerCase().includes(termino))
-  }).slice(0, 5) // Limitamos a 5 resultados para que no sea enorme
+  }).slice(0, 12)
 })
 
-// --- ID FINAL A ENVIAR AL COMPONENTE HORARIO ---
 const idCalculado = computed(() => {
   if (esAdmin.value) {
     return idProfesorSeleccionado.value
@@ -159,11 +174,10 @@ onMounted(async () => {
   await cargarYBuscarProfesor()
 })
 
-// --- FUNCIONES DEL BUSCADOR ---
 const seleccionarProfesor = (profe) => {
   idProfesorSeleccionado.value = profe.idProfesor
-  nombreProfesorSeleccionado.value = `${profe.nombre} ${profe.apellido || ''}`
-  busquedaProfesor.value = nombreProfesorSeleccionado.value // Ponemos el nombre en el input
+  nombreProfesorSeleccionado.value = obtenerNombreCompleto(profe)
+  busquedaProfesor.value = nombreProfesorSeleccionado.value
   mostrarLista.value = false
 }
 
@@ -179,13 +193,13 @@ const obtenerIniciales = (nombre) => {
   return nombre.substring(0, 2).toUpperCase()
 }
 
-// --- LÓGICA DE CARGA INICIAL ---
+const obtenerNombreCompleto = (profe) => `${profe.nombre} ${profe.apellido || ''}`.trim()
+
 async function cargarYBuscarProfesor() {
   cargandoId.value = true
   try {
     listaProfesores.value = await profesorService.obtenerProfesores()
 
-    // Lógica para autoseleccionar si NO es admin
     if (!esAdmin.value && auth.usuario) {
       const emailUser = auth.usuario.email?.toLowerCase().trim()
       const nombreUser = auth.usuario.nombre?.toLowerCase().trim()
@@ -219,8 +233,6 @@ async function cargarYBuscarProfesor() {
 
 <style scoped>
 .container-fluid { transition: all 0.3s ease; }
-
-/* Estilos de la Lista Flotante */
 .lista-flotante {
   position: absolute;
   top: 100%;
@@ -241,8 +253,6 @@ async function cargarYBuscarProfesor() {
 .lista-flotante li:hover {
   background-color: #f0f7ff;
 }
-
-/* Avatar circular para las iniciales */
 .avatar-circle {
   width: 32px;
   height: 32px;
@@ -252,16 +262,12 @@ async function cargarYBuscarProfesor() {
   justify-content: center;
   font-weight: bold;
 }
-
-/* Fondo transparente para detectar clics fuera */
 .fondo-transparente {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
   z-index: 999;
   cursor: default;
 }
-
-/* Ajuste responsive para la columna derecha */
 @media (min-width: 768px) {
   .border-start-md {
     border-left: 1px solid #dee2e6;

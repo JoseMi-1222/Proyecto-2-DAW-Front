@@ -2,7 +2,6 @@
   <div class="bg-gradient">
     <div class="login-wrapper d-flex justify-content-center align-items-center vh-100">
       <div class="card-container" :class="{ flipped: mostrarRecuperacion }">
-        <!-- Cara frontal: login -->
         <div class="card-side front card shadow p-4 w-100">
           <div class="text-center mb-4">
             <img src="../assets/logo_iespsur.jpeg" alt="logo" style="width: 60px;" />
@@ -28,7 +27,6 @@
           </div>
         </div>
 
-        <!-- Cara trasera: recuperación -->
         <div class="card-side back card shadow p-4 w-100">
           <div class="text-center mb-4">
             <img src="../assets/logo_iespsur.jpeg" alt="logo" style="width: 60px;" />
@@ -100,8 +98,8 @@ async function enviarCorreo() {
     const data = await authService.recuperarPassword(correo.value)
     mensaje.value = data
   } catch (error) {
-    console.error(' Error completo:', error)                // Muestra error completo
-    console.log('⚠️ error.response:', error.response)         // Info útil del backend
+    console.error(' Error completo:', error)
+    console.log('⚠️ error.response:', error.response)
 
     mensaje.value = error.response?.data.message
   }
