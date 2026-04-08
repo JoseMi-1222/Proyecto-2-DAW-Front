@@ -67,9 +67,6 @@ import Horario from '../components/Horario.vue'
 import ModalMensaje from '../components/ModalMensaje.vue'
 // Removed import AusenciasProfesor from '../components/AusenciasProfesor.vue'
 import TablaAusencias from '../components/TablaAusencias.vue' // Added import
-import FormularioCrearUsuario from '../components/FormularioCrearUsuario.vue'
-import FormularioEditarUsuario from '../components/FormularioEditarUsuario.vue'
-import FormularioCrearAusencia from '../components/FormularioCrearAusencia.vue'
 import ausenciaService from '../services/ausenciaService' // Added import
 import profesorService from '../services/profesorService'
 import usuarioService from '../services/usuarioService'

@@ -8,9 +8,6 @@
       </div>
       
       <div class="d-flex gap-2">
-        <button class="btn btn-outline-primary" @click="abrirModalUsuario">
-          <i class="bi bi-person-plus-fill me-2"></i>Asignar Usuario
-        </button>
         <button class="btn btn-primary" @click="abrirModalCrear">
           <i class="bi bi-plus-lg me-2"></i>Nuevo Profesor
         </button>
@@ -129,11 +126,7 @@
       @confirmar="eliminarProfesor"
     />
 
-    <ModalAsignarUsuario 
-      :visible="mostrarModalUsuario"
-      @cerrar="mostrarModalUsuario = false"
-      @guardar-exito="manejarExito"
-    />
+   
 
     <ModalHorario 
       :visible="mostrarModalHorario" 
@@ -151,7 +144,6 @@ import profesorService from '../services/profesorService'
 import MenuLateral from '../components/MenuLateral.vue'
 import ModalProfesor from '../components/ModalProfesor.vue'
 import ModalConfirmacion from '../components/ModalConfirmacion.vue'
-import ModalAsignarUsuario from '../components/ModalAsignarUsuario.vue'
 import ModalHorario from '../components/ModalHorario.vue'
 
 const profesores = ref([])

@@ -39,6 +39,10 @@ export default {
     return response.data
   },
   
+  async crearProfesorCompleto(datosProfesorYUsuario) {
+    const response = await api.post('/profesores/crear-completo', datosProfesorYUsuario)
+    return response.data
+  },
 
   async actualizarProfesor(id, datosProfesor) {
     const response = await api.put(`/profesores/${id}`, datosProfesor)

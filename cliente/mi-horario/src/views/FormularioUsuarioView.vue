@@ -28,9 +28,6 @@
   import { useRoute, useRouter } from 'vue-router'
   import profesorService from '../services/profesorService'
   
-  import FormularioCrearUsuario from '../components/FormularioCrearUsuario.vue'
-  import FormularioEditarUsuario from '../components/FormularioEditarUsuario.vue'
-  
   const route = useRoute()
   const router = useRouter()
   
