@@ -8,7 +8,7 @@
         v-model="valorBusqueda"
         @input="emitirBusqueda"
         type="text"
-        placeholder="Buscar profesor..."
+        :placeholder="$t('searchTeacher.placeholder')"
         class="form-control border-0 shadow-none bg-light text-dark"
       />
     </div>

@@ -5,7 +5,7 @@
     <div class="card shadow-lg border-0 rounded-3">
       
       <div class="card-header bg-dark text-white py-3 px-4 d-flex justify-content-between align-items-center">
-        <h4 class="mb-0 fw-bold"><i class="bi bi-hdd-network me-2"></i>Centro de Datos</h4>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-hdd-network me-2"></i>{{ $t('dataCenter.title') }}</h4>
         <span class="badge bg-secondary">v1.0</span>
       </div>
       
@@ -19,8 +19,8 @@
                 <i class="bi bi-cloud-arrow-up fs-3"></i>
               </div>
               <div>
-                <h5 class="fw-bold mb-0 text-primary">Importar Datos</h5>
-                <small class="text-muted">Actualiza la base de datos desde un archivo</small>
+                <h5 class="fw-bold mb-0 text-primary">{{ $t('dataCenter.importTitle') }}</h5>
+                <small class="text-muted">{{ $t('dataCenter.importSubtitle') }}</small>
               </div>
             </div>
 
@@ -34,9 +34,9 @@
               
               <div v-if="!archivo">
                 <i class="bi bi-file-earmark-arrow-up text-muted display-4 mb-3 d-block"></i>
-                <p class="mb-3 text-muted">Arrastra tu archivo <strong>.txt</strong> o <strong>.json</strong> aquí</p>
+                <p class="mb-3 text-muted">{{ $t('dataCenter.dragDrop') }} <strong>.txt</strong> {{ $t('common.or') }} <strong>.json</strong> {{ $t('dataCenter.here') }}</p>
                 <button class="btn btn-outline-primary btn-sm rounded-pill px-4" @click="$refs.fileInput.click()">
-                  Buscar en el equipo
+                  {{ $t('dataCenter.browse') }}
                 </button>
               </div>
 
@@ -54,7 +54,7 @@
                 
                 <div class="mt-3 text-center">
                   <span class="badge mb-2" :class="esJson ? 'bg-warning text-dark' : 'bg-info text-white'">
-                    {{ esJson ? 'MODO RESTAURACIÓN' : 'MODO CARGA INICIAL' }}
+                    {{ esJson ? $t('dataCenter.restoreMode') : $t('dataCenter.initialLoadMode') }}
                   </span>
                 </div>
               </div>
@@ -76,8 +76,8 @@
                 <i class="bi bi-cloud-arrow-down fs-3"></i>
               </div>
               <div>
-                <h5 class="fw-bold mb-0 text-success">Exportar Datos</h5>
-                <small class="text-muted">Descarga copias de seguridad o informes</small>
+                <h5 class="fw-bold mb-0 text-success">{{ $t('dataCenter.exportTitle') }}</h5>
+                <small class="text-muted">{{ $t('dataCenter.exportSubtitle') }}</small>
               </div>
             </div>
 
@@ -87,12 +87,12 @@
                   <i class="bi bi-database-fill-lock fs-4"></i>
                 </div>
                 <div class="flex-grow-1">
-                  <h6 class="fw-bold mb-1">Copia Completa (JSON)</h6>
+                  <h6 class="fw-bold mb-1">{{ $t('dataCenter.fullCopy') }}</h6>
                   <p class="text-muted small mb-0 lh-sm">
-                    Incluye usuarios, contraseñas, horarios y asignaturas. Ideal para migrar a otro PC.
+                    {{ $t('dataCenter.fullCopyDesc') }}
                   </p>
                 </div>
-                <button class="btn btn-light rounded-circle border shadow-sm" @click="descargarJson" :disabled="descargando" title="Descargar">
+                <button class="btn btn-light rounded-circle border shadow-sm" @click="descargarJson" :disabled="descargando" :title="$t('common.download')">
                   <i class="bi bi-download text-dark"></i>
                 </button>
               </div>
@@ -104,12 +104,12 @@
                   <i class="bi bi-file-text-fill fs-4"></i>
                 </div>
                 <div class="flex-grow-1">
-                  <h6 class="fw-bold mb-1">Horario Oficial (TXT)</h6>
+                  <h6 class="fw-bold mb-1">{{ $t('dataCenter.officialSchedule') }}</h6>
                   <p class="text-muted small mb-0 lh-sm">
-                    Archivo de texto plano compatible con el formato del instituto (Séneca/Otros).
+                    {{ $t('dataCenter.officialScheduleDesc') }}
                   </p>
                 </div>
-                <button class="btn btn-light rounded-circle border shadow-sm" @click="descargarTxt" :disabled="descargando" title="Descargar">
+                <button class="btn btn-light rounded-circle border shadow-sm" @click="descargarTxt" :disabled="descargando" :title="$t('common.download')">
                   <i class="bi bi-download text-dark"></i>
                 </button>
               </div>
@@ -140,6 +140,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import datosService from '../services/datosService'
 import MenuLateral from '../components/MenuLateral.vue'
 import ModalConfirmacion from '../components/ModalConfirmacion.vue'
@@ -157,14 +158,15 @@ const mostrarMensaje = ref(false)
 const tituloMensaje = ref('')
 const textoMensaje = ref('')
 const tipoMensaje = ref('info')
+const { t } = useI18n()
 
 const esJson = computed(() => archivo.value?.name.toLowerCase().endsWith('.json'))
 const iconoArchivo = computed(() => esJson.value ? 'bi-filetype-json text-warning' : 'bi-filetype-txt text-info')
 
 const textoBotonImportar = computed(() => {
-  if (cargando.value) return 'Procesando...'
-  if (!archivo.value) return 'Seleccionar Archivo'
-  return esJson.value ? 'Restaurar Copia de Seguridad' : 'Cargar Horarios Iniciales'
+  if (cargando.value) return t('common.processing')
+  if (!archivo.value) return t('dataCenter.selectFile')
+  return esJson.value ? t('dataCenter.restoreBackup') : t('dataCenter.loadInitialSchedules')
 })
 
 const seleccionarArchivo = (e) => {
@@ -180,9 +182,9 @@ const pedirConfirmacion = () => {
   if (!archivo.value) return
 
   if (esJson.value) {
-    textoConfirmacion.value = "Vas a restaurar una copia de seguridad. Se borrarán todos los datos actuales y se reemplazarán por los de la copia."
+    textoConfirmacion.value = t('dataCenter.confirmRestore')
   } else {
-    textoConfirmacion.value = "Vas a cargar un horario inicial (TXT). Esto borrará los horarios actuales para generar los nuevos."
+    textoConfirmacion.value = t('dataCenter.confirmInitialLoad')
   }
   
   mostrarConfirmacion.value = true
@@ -195,7 +197,7 @@ const ejecutarImportacion = async () => {
   try {
     const res = await datosService.importarDatos(archivo.value)
     
-    mostrarNotificacion('Importación Exitosa', res.data, 'success')
+    mostrarNotificacion(t('dataCenter.importSuccess'), res.data, 'success')
     
     setTimeout(() => {
         window.location.reload()
@@ -203,8 +205,8 @@ const ejecutarImportacion = async () => {
 
   } catch (error) {
     console.error(error)
-    const msg = error.response?.data || "Error desconocido al conectar con el servidor"
-    mostrarNotificacion('Error', msg, 'error')
+    const msg = error.response?.data || t('dataCenter.unknownServerError')
+    mostrarNotificacion(t('common.error'), msg, 'error')
   } finally {
     cargando.value = false
     archivo.value = null
@@ -226,7 +228,7 @@ const descargarArchivo = async (metodoServicio, nombreDefault, extension) => {
     window.URL.revokeObjectURL(url)
   } catch (e) {
     console.error(e)
-    mostrarNotificacion('Error', 'Error al descargar el archivo.', 'error')
+    mostrarNotificacion(t('common.error'), t('dataCenter.downloadError'), 'error')
   } finally {
     descargando.value = false
   }

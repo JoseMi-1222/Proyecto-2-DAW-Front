@@ -2,43 +2,43 @@
   <div class="card mb-4 border-primary shadow-sm">
     <div class="card-body">
       <h5 class="card-title mb-4">
-        <i class="bi bi-clock-history me-2"></i>Registrar nueva ausencia
+        <i class="bi bi-clock-history me-2"></i>{{ $t('absenceForm.title') }}
       </h5>
 
       <form @submit.prevent="crearAusencia">
         <div class="row g-3">
 
           <div class="col-md-6">
-            <label class="form-label fw-bold">1. Selecciona la Fecha</label>
+            <label class="form-label fw-bold">{{ $t('absenceForm.step1') }}</label>
             <input type="date" v-model="nuevaAusencia.fecha" class="form-control form-control-lg" required />
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-bold">2. Instrucciones</label>
+            <label class="form-label fw-bold">{{ $t('absenceForm.step2') }}</label>
             <input type="text" v-model="nuevaAusencia.motivo" class="form-control form-control-lg"
-              placeholder="Ej: Tareas al profesor de guardia" />
+              :placeholder="$t('absenceForm.instructionsPlaceholder')" />
           </div>
 
           <div class="mb-3 mt-3">
-            <label class="form-label"><b>3. Adjuntar Tareas (Opcional)</b></label>
+            <label class="form-label"><b>{{ $t('absenceForm.step3') }}</b></label>
             <input type="file" class="form-control" @change="capturarArchivo"
               accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg">
-            <small class="text-muted">Formatos permitidos: PDF, Word, TXT o Imágenes.</small>
+            <small class="text-muted">{{ $t('absenceForm.allowedFormats') }}</small>
           </div>
 
           <div class="col-12">
-            <label class="form-label fw-bold">4. Selecciona las clases a las que faltarás</label>
+            <label class="form-label fw-bold">{{ $t('absenceForm.step4') }}</label>
             <p class="text-muted small mb-2">
-              <i class="bi bi-info-circle me-1"></i>Todas tus clases vienen seleccionadas por defecto. Puedes hacer clic en ellas para desmarcarlas si vas a venir a alguna.
+              <i class="bi bi-info-circle me-1"></i>{{ $t('absenceForm.step4Help') }}
             </p>
 
             <div v-if="!nuevaAusencia.fecha" class="alert alert-info py-2">
-              <i class="bi bi-calendar-event me-2"></i>Por favor, selecciona una fecha para ver tus clases.
+              <i class="bi bi-calendar-event me-2"></i>{{ $t('absenceForm.selectDateInfo') }}
             </div>
 
             <div v-else-if="cargandoHorario" class="text-center py-3">
               <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-              <span class="ms-2">Consultando tu horario...</span>
+              <span class="ms-2">{{ $t('absenceForm.loadingSchedule') }}</span>
             </div>
 
             <div v-else-if="clasesDelDia.length > 0" class="row row-cols-1 row-cols-md-3 g-2 mt-1">
@@ -59,7 +59,7 @@
                         tramo.hora_fin || tramo.franja?.horaFin }}
                     </p>
                     <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.7rem;">
-                      {{ tramo.aula?.codigo || tramo.aula || 'Aula TBD' }}
+                      {{ tramo.aula?.codigo || tramo.aula || $t('absenceForm.classroomTbd') }}
                     </span>
                   </div>
                 </div>
@@ -67,13 +67,13 @@
             </div>
 
             <div v-else class="alert alert-warning py-2 mt-1">
-              <i class="bi bi-exclamation-triangle me-2"></i>No tienes clases registradas para este día.
+              <i class="bi bi-exclamation-triangle me-2"></i>{{ $t('absenceForm.noClassesThatDay') }}
             </div>
           </div>
 
           <div class="col-12 d-flex justify-content-end mt-4">
             <button type="submit" class="btn btn-success btn-lg px-5" :disabled="clasesSeleccionadas.length === 0">
-              <i class="bi bi-plus-circle me-2"></i>Confirmar {{ clasesSeleccionadas.length }} Ausencia(s)
+              <i class="bi bi-plus-circle me-2"></i>{{ $t('absenceForm.confirm') }} {{ clasesSeleccionadas.length }} {{ $t('absenceForm.absenceCount') }}
             </button>
           </div>
         </div>
@@ -84,6 +84,7 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import horarioService from '../services/horarioService'
 import ausenciaService from '../services/ausenciaService'
 
@@ -95,6 +96,7 @@ const props = defineProps({
     required: true
   }
 })
+const { t } = useI18n()
 
 const nuevaAusencia = ref({
   fecha: '',
@@ -219,7 +221,7 @@ async function crearAusencia() {
 
   } catch (error) {
     console.error("Error completo:", error);
-    const mensaje = error.response?.data?.message || 'Error al registrar algunas ausencias o subir el archivo.'
+    const mensaje = error.response?.data?.message || t('absenceForm.registerError')
     emit('error', mensaje)
   }
 }

@@ -13,7 +13,7 @@
             for="inputFotoPerfil" 
             class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
             style="width: 30px; height: 30px; cursor: pointer; right: 15px !important;"
-            title="Cambiar foto"
+            :title="$t('profile.changePhoto')"
           >
             <i class="bi bi-camera-fill" style="font-size: 0.8rem;"></i>
           </label>
@@ -35,36 +35,36 @@
 
       <hr class="my-4">
 
-      <h5 class="mb-3"><i class="bi bi-shield-lock me-2"></i>Seguridad</h5>
+      <h5 class="mb-3"><i class="bi bi-shield-lock me-2"></i>{{ $t('profile.security') }}</h5>
       
       <form @submit.prevent="cambiarPassword">
         <div class="mb-3">
-          <label class="form-label small text-muted">Contraseña actual</label>
+          <label class="form-label small text-muted">{{ $t('profile.currentPassword') }}</label>
           <input 
             v-model="passwordActual" 
             type="password" 
             class="form-control" 
-            placeholder="Introduce tu contraseña actual" 
+            :placeholder="$t('profile.currentPasswordPlaceholder')" 
           />
         </div>
 
         <div class="mb-3">
-          <label class="form-label small text-muted">Nueva contraseña</label>
+          <label class="form-label small text-muted">{{ $t('profile.newPassword') }}</label>
           <input 
             v-model="nuevaPassword" 
             type="password" 
             class="form-control" 
-            placeholder="Mínimo 6 caracteres" 
+            :placeholder="$t('profile.newPasswordPlaceholder')" 
           />
         </div>
 
         <div class="mb-4">
-          <label class="form-label small text-muted">Confirmar contraseña</label>
+          <label class="form-label small text-muted">{{ $t('profile.confirmPassword') }}</label>
           <input 
             v-model="confirmacionPassword" 
             type="password" 
             class="form-control" 
-            placeholder="Repite la nueva contraseña" 
+            :placeholder="$t('profile.confirmPasswordPlaceholder')" 
           />
         </div>
 
@@ -74,12 +74,12 @@
           :disabled="!formularioValido || cargando"
         >
           <span v-if="cargando" class="spinner-border spinner-border-sm me-2"></span>
-          {{ cargando ? 'Actualizando...' : 'Actualizar contraseña' }}
+          {{ cargando ? $t('profile.updating') : $t('profile.updatePassword') }}
         </button>
       </form>
 
       <button class="btn btn-outline-danger w-100" @click="logout">
-        <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
+        <i class="bi bi-box-arrow-right me-2"></i>{{ $t('menu.logout') }}
       </button>
     </div>
   </div>
@@ -97,12 +97,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import usuarioService from '../services/usuarioService'
 import ModalMensaje from '../components/ModalMensaje.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+const { t } = useI18n()
 
 const imagenPerfil = ref(null)
 const imagenPorDefecto = 'https://img.freepik.com/vector-premium/icono-usuario-avatar-perfil-usuario-icono-persona-imagen-perfil-silueta-neutral-genero-adecuado_697711-1132.jpg'
@@ -140,12 +142,12 @@ function subirImagen(event) {
   usuarioService
     .subirImagen(auth.usuario.id, formData)
     .then(() => {
-      mostrarModal('Foto actualizada', 'success')
+      mostrarModal(t('profile.photoUpdated'), '', 'success')
       cargarImagenConToken()
     })
     .catch(err => {
       console.error(err)
-      mostrarModal('Error', 'No se pudo subir la imagen.', 'error')
+      mostrarModal(t('common.error'), t('profile.photoUploadError'), 'error')
     })
     .finally(() => cargando.value = false)
 }
@@ -169,7 +171,7 @@ async function cambiarPassword() {
       nuevaPassword.value
     )
 
-    mostrarModal('Contraseña Actualizada', 'success')
+    mostrarModal(t('profile.passwordUpdated'), '', 'success')
     
     setTimeout(() => {
       logout()
@@ -177,8 +179,8 @@ async function cambiarPassword() {
     
   } catch (err) {
     console.error(err)
-    const msg = err.response?.data?.error || err.response?.data?.mensaje || 'La contraseña actual no es correcta.'
-    mostrarModal('Error', msg, 'error')
+    const msg = err.response?.data?.error || err.response?.data?.mensaje || t('profile.currentPasswordWrong')
+    mostrarModal(t('common.error'), msg, 'error')
   } finally {
     cargando.value = false
   }

@@ -3,14 +3,14 @@
   
   <div class="contenedor-admin">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="fw-bold"><i class="bi bi-shield-lock me-2"></i>Control de Ausencias (Global)</h2>
+      <h2 class="fw-bold"><i class="bi bi-shield-lock me-2"></i>{{ $t('adminAbsences.title') }}</h2>
       
       <div class="input-group" style="max-width: 300px;">
         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
         <input 
           type="text" 
           class="form-control border-start-0 ps-0" 
-          placeholder="Buscar profesor..." 
+          :placeholder="$t('adminAbsences.searchTeacher')" 
           v-model="busqueda"
         >
       </div>
@@ -18,12 +18,12 @@
 
     <div v-if="cargando" class="text-center py-5">
       <div class="spinner-border text-primary"></div>
-      <p class="mt-2 text-muted">Cargando registros...</p>
+      <p class="mt-2 text-muted">{{ $t('adminAbsences.loading') }}</p>
     </div>
 
     <div v-else>
       <div v-if="ausenciasAgrupadas.length === 0" class="alert alert-info text-center">
-        No hay ausencias registradas (o no coinciden con la búsqueda).
+        {{ $t('adminAbsences.noRecords') }}
       </div>
 
       <div v-for="grupo in ausenciasAgrupadas" :key="grupo.key" class="card mb-4 shadow-sm border-0">
@@ -39,13 +39,13 @@
             <button 
               v-if="tieneJustificantePendiente(grupo.ausencias)"
               class="btn btn-sm btn-success fw-bold px-3 shadow-sm" 
-              title="Aprobar todo el día"
+              :title="$t('adminAbsences.approveDay')"
               @click="aprobarJustificante(grupo.fecha, grupo.idProfesor)"
             >
-              <i class="bi bi-check-circle-fill me-1"></i> Justificar Falta de Asistencia
+              <i class="bi bi-check-circle-fill me-1"></i> {{ $t('adminAbsences.justifyAbsence') }}
             </button>
             
-            <span class="badge bg-secondary">{{ grupo.ausencias.length }} ausencias</span>
+            <span class="badge bg-secondary">{{ grupo.ausencias.length }} {{ $t('adminAbsences.absencesCount') }}</span>
           </div>
         </div>
         
@@ -54,13 +54,13 @@
             <table class="table table-hover mb-0 align-middle">
               <thead class="table-light">
                 <tr>
-                  <th class="ps-4">Profesor</th>
-                  <th>Hora</th>
-                  <th>Asignatura / Grupo</th>
-                  <th class="text-center">Tareas</th>
-                  <th class="text-center">Justificante</th>
-                  <th class="text-center">Estado</th>
-                  <th class="text-center">Acciones</th>
+                  <th class="ps-4">{{ $t('adminAbsences.table.teacher') }}</th>
+                  <th>{{ $t('adminAbsences.table.time') }}</th>
+                  <th>{{ $t('adminAbsences.table.subjectGroup') }}</th>
+                  <th class="text-center">{{ $t('adminAbsences.table.tasks') }}</th>
+                  <th class="text-center">{{ $t('adminAbsences.table.proof') }}</th>
+                  <th class="text-center">{{ $t('adminAbsences.table.status') }}</th>
+                  <th class="text-center">{{ $t('adminAbsences.table.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -72,7 +72,7 @@
                         {{ obtenerIniciales(ausencia.horario?.profesor?.nombre) }}
                       </div>
                       <span class="fw-bold">
-                        {{ ausencia.horario?.profesor?.nombre || 'Desconocido' }}
+                        {{ ausencia.horario?.profesor?.nombre || $t('common.unknown') }}
                       </span>
                     </div>
                   </td>
@@ -84,12 +84,12 @@
 
                   <td>
                     <span class="d-block text-truncate" style="max-width: 250px;">
-                      {{ ausencia.horario?.asignatura?.nombre || 'Guardia / Sin asignatura' }}
+                      {{ ausencia.horario?.asignatura?.nombre || $t('adminAbsences.noSubject') }}
                     </span>
                     <small class="text-muted">
                       {{ ausencia.horario?.curso?.nombre || '' }}
                       <span v-if="ausencia.horario?.aula?.codigo">
-                         (Aula {{ ausencia.horario.aula.codigo }})
+                         ({{ $t('common.classroom') }} {{ ausencia.horario.aula.codigo }})
                       </span>
                     </small>
                   </td>
@@ -97,15 +97,15 @@
                   <td class="text-center">
                     <div class="d-flex flex-column gap-1 align-items-center">
                       <span class="text-muted fst-italic text-wrap" style="max-width: 200px;">
-                        "{{ ausencia.descripcion || ausencia.motivo || 'Sin Instrucciones' }}"
+                        "{{ ausencia.descripcion || ausencia.motivo || $t('adminAbsences.noInstructions') }}"
                       </span>
                       <button 
                         v-if="ausencia.archivoAdjunto"
                         @click="descargarArchivo(ausencia.archivoAdjunto)" 
                         class="btn btn-sm btn-outline-primary mt-1"
-                        title="Descargar tarea adjunta"
+                        :title="$t('adminAbsences.downloadTask')"
                       >
-                        <i class="bi bi-paperclip"></i> Tarea
+                        <i class="bi bi-paperclip"></i> {{ $t('adminAbsences.task') }}
                       </button>
                     </div>
                   </td>
@@ -115,24 +115,24 @@
                       v-if="ausencia.justificante"
                       @click="descargarArchivo(ausencia.justificante)" 
                       class="btn btn-sm btn-outline-info"
-                      title="Descargar justificante médico/legal"
+                      :title="$t('adminAbsences.downloadProof')"
                     >
-                      <i class="bi bi-file-medical"></i> Ver Justificante
+                      <i class="bi bi-file-medical"></i> {{ $t('adminAbsences.viewProof') }}
                     </button>
-                    <span v-else class="text-muted small">—</span>
+                    <span v-else class="text-muted small">{{ $t('common.dash') }}</span>
                   </td>
 
                   <td class="text-center">
                     <span class="badge rounded-pill" 
                           :class="ausencia.justificada ? 'bg-success' : 'bg-warning text-dark'">
-                      {{ ausencia.justificada ? 'Aprobada' : 'Pendiente' }}
+                      {{ ausencia.justificada ? $t('common.approved') : $t('common.pending') }}
                     </span>
                   </td>
 
                   <td class="text-center">
                     <button 
                       class="btn btn-sm btn-outline-danger border-0" 
-                      title="Eliminar Ausencia"
+                      :title="$t('adminAbsences.deleteAbsence')"
                       @click="confirmarEliminacion(ausencia)"
                     >
                       <i class="bi bi-trash-fill"></i>
@@ -149,7 +149,7 @@
 
   <ModalConfirmacion 
     :visible="mostrarModal"
-    mensaje="¿Seguro que quieres borrar esta ausencia? Se eliminará permanentemente."
+    :mensaje="$t('adminAbsences.confirmDelete')"
     @cerrar="mostrarModal = false"
     @confirmar="eliminarAusencia"
   />
@@ -157,6 +157,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ausenciaService from '../services/ausenciaService'
 import MenuLateral from '../components/MenuLateral.vue'
 import ModalConfirmacion from '../components/ModalConfirmacion.vue'
@@ -165,6 +166,7 @@ import api from '../axios'
 const ausencias = ref([])
 const cargando = ref(true)
 const busqueda = ref('')
+const { t, locale } = useI18n()
 
 const mostrarModal = ref(false)
 const itemABorrar = ref(null)
@@ -186,7 +188,7 @@ const cargarDatos = async () => {
 }
 
 const normalizarFecha = (fecha) => {
-  if (!fecha) return 'Sin Fecha'
+  if (!fecha) return t('adminAbsences.noDate')
   if (Array.isArray(fecha)) {
     const y = fecha[0]
     const m = String(fecha[1]).padStart(2, '0')
@@ -211,7 +213,7 @@ const ausenciasAgrupadas = computed(() => {
   lista.forEach(aus => {
     const fechaStr = normalizarFecha(aus.fecha)
     const idProf = aus.horario?.profesor?.idProfesor || 0
-    const profName = aus.horario?.profesor?.nombre || 'Desconocido'
+    const profName = aus.horario?.profesor?.nombre || t('common.unknown')
     
     const key = `${fechaStr}_${idProf}`
     
@@ -249,11 +251,12 @@ const formatearHora = (hora) => {
 }
 
 const formatearFechaVisual = (fechaStr) => {
-  if (!fechaStr || fechaStr === 'Sin Fecha') return fechaStr
+  if (!fechaStr || fechaStr === t('adminAbsences.noDate')) return fechaStr
   try {
     const f = new Date(fechaStr)
     const op = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-    const txt = f.toLocaleDateString('es-ES', op)
+    const targetLocale = locale.value === 'en' ? 'en-US' : 'es-ES'
+    const txt = f.toLocaleDateString(targetLocale, op)
     return txt.charAt(0).toUpperCase() + txt.slice(1)
   } catch (e) {
     return fechaStr
@@ -286,7 +289,7 @@ const descargarArchivo = async (nombreArchivo) => {
     
   } catch (error) {
     console.error("Error al descargar el archivo:", error);
-    alert("No se pudo descargar el archivo.");
+    alert(t('adminAbsences.downloadError'));
   }
 }
 
@@ -301,7 +304,7 @@ const aprobarJustificante = async (fechaNorm, idProf) => {
     
   } catch (error) {
     console.error("Error al aprobar justificante:", error);
-    alert("Error al aprobar el justificante.");
+    alert(t('adminAbsences.approveError'));
   }
 }
 
@@ -322,7 +325,7 @@ const eliminarAusencia = async () => {
     await cargarDatos() 
   } catch (e) {
     console.error(e)
-    alert("Error al eliminar.")
+    alert(t('adminAbsences.deleteError'))
   }
 }
 </script>

@@ -5,21 +5,20 @@
         <div class="mt-4 d-flex flex-column align-items-center">
             <input type="file" accept="image/*" ref="inputArchivo" @change="subirImagen" style="display: none;" />
 
-            <img :src="imagenPerfil || imagenPorDefecto" alt="Foto de perfil" class="rounded-circle"
+            <img :src="imagenPerfil || imagenPorDefecto" :alt="$t('profile.photoAlt')" class="rounded-circle"
                 :style="{ width: '150px', height: '150px', objectFit: 'cover', cursor: profesor?.usuario ? 'pointer' : 'not-allowed' }"
                 @click="profesor?.usuario && confirmarYSubir()" />
 
 
             <p class="mt-3">{{ profesor?.nombre }}</p>
-            <p v-if="profesor?.usuario"><strong>Email:</strong> {{ profesor.usuario.email }}</p>
+            <p v-if="profesor?.usuario"><strong>{{ $t('userForm.email') }}:</strong> {{ profesor.usuario.email }}</p>
         </div>
 
         <div class="mt-5 text-center " v-if="profesor">
-            <button class="btn btn-secondary me-2" @click="mostrarFormulario('edit')" v-if="profesor?.usuario">Editar
-                Usuario</button>
-            <button class="btn btn-danger" @click="eliminarUsuario" v-if="profesor?.usuario">Eliminar Usuario</button>
+            <button class="btn btn-secondary me-2" @click="mostrarFormulario('edit')" v-if="profesor?.usuario">{{ $t('userView.editUser') }}</button>
+            <button class="btn btn-danger" @click="eliminarUsuario" v-if="profesor?.usuario">{{ $t('userView.deleteUser') }}</button>
             <div v-else>
-                <button class="btn btn-primary me-2" @click="mostrarFormulario('create')">Crear Usuario</button>
+                <button class="btn btn-primary me-2" @click="mostrarFormulario('create')">{{ $t('userView.createUser') }}</button>
             </div>
         </div>
 
@@ -35,15 +34,15 @@
 
             <div class="text-center mt-4 mb-3">
                 <button class="btn btn-outline-warning" @click="mostrarFormularioAusencia = !mostrarFormularioAusencia">
-                    {{ mostrarFormularioAusencia ? 'Cancelar' : 'Crear Ausencia' }}
+                    {{ mostrarFormularioAusencia ? $t('common.cancel') : $t('userView.createAbsence') }}
                 </button>
             </div>
 
             <FormularioCrearAusencia v-if="mostrarFormularioAusencia" :idProfesor="profesor?.idProfesor"
-                @ausenciaCreada="onAusenciaCreada" @error="mensaje => mostrarModal(' Error', mensaje, 'error')" />
+                @ausenciaCreada="onAusenciaCreada" @error="mensaje => mostrarModal(t('common.error'), mensaje, 'error')" />
 
             <div v-if="profesor?.usuario?.id">
-                 <h4 class="mt-4 mb-3">Ausencias Registradas</h4>
+                  <h4 class="mt-4 mb-3">{{ $t('userView.registeredAbsences') }}</h4>
                  <TablaAusencias 
                     :ausencias="ausenciasOrdenadas" 
                     @eliminarDia="eliminarAusencia"
@@ -61,6 +60,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import MenuLateral from '../components/MenuLateral.vue'
 import Horario from '../components/Horario.vue'
@@ -76,6 +76,7 @@ import profesorService from '../services/profesorService'
 import usuarioService from '../services/usuarioService'
 
 const route = useRoute()
+const { t } = useI18n()
 const idProfesor = route.params.id
 
 const profesor = ref(null)
@@ -119,7 +120,7 @@ async function obtenerDatosProfesor() {
         }
 
     } catch (error) {
-        mostrarModal('Error', 'No se pudo cargar el profesor.', 'error')
+        mostrarModal(t('common.error'), t('userView.loadTeacherError'), 'error')
     }
 }
 
@@ -129,7 +130,7 @@ async function cargarAusencias(idUsuario) {
     ausencias.value = data
   } catch (error) {
     console.error('Error al cargar ausencias:', error)
-    mostrarModal('Error', 'No se pudieron cargar las ausencias.', 'error')
+        mostrarModal(t('common.error'), t('userView.loadAbsencesError'), 'error')
   }
 }
 
@@ -144,17 +145,17 @@ const eliminarAusencia = async ({ id = null, fecha = null }) => {
   if(!idUsuario) return
 
   let mensaje = id 
-    ? '¿Estás seguro de eliminar esta hora?' 
-    : '¿Estás seguro de eliminar el día completo?'
+        ? t('userView.confirmDeleteHour')
+        : t('userView.confirmDeleteDay')
   
   if (!confirm(mensaje)) return
 
   try {
         await ausenciaService.eliminarAusencia(id, fecha, idProfesorReal)
     await cargarAusencias(idUsuario)
-    mostrarModal('Eliminado', 'Se ha eliminado correctamente.', 'success')
+        mostrarModal(t('userView.deleted'), t('userView.deletedOk'), 'success')
   } catch (error) {
-    mostrarModal('Error', 'No se pudo eliminar.', 'error')
+        mostrarModal(t('common.error'), t('userView.deleteError'), 'error')
   }
 }
 
@@ -163,14 +164,14 @@ async function justificarAusenciasDia(fecha) {
     const idProfesorReal = profesor.value?.idProfesor
   if(!idUsuario) return
 
-  if (!confirm(`¿Justificar todas las ausencias de este día?`)) return
+    if (!confirm(t('userView.confirmJustifyDay'))) return
   
   try {
         await ausenciaService.justificarDia(fecha, idProfesorReal)
     await cargarAusencias(idUsuario)
-    mostrarModal('Justificado', 'Día justificado correctamente.', 'success')
+        mostrarModal(t('userView.justified'), t('userView.justifiedOk'), 'success')
   } catch (error) {
-    mostrarModal('Error', 'No se pudieron justificar.', 'error')
+        mostrarModal(t('common.error'), t('userView.justifyError'), 'error')
   }
 }
 
@@ -186,7 +187,7 @@ async function cargarImagen() {
 }
 
 function confirmarYSubir() {
-    if (confirm('¿Estás seguro de que quieres subir una nueva imagen de perfil?')) {
+    if (confirm(t('userView.confirmUploadImage'))) {
         inputArchivo.value?.click()
     }
 }
@@ -201,13 +202,13 @@ async function subirImagen(event) {
 
     try {
         const data = await usuarioService.subirImagen(idUsuario, formData)
-        mostrarModal(' Imagen actualizada', data, 'success')
+        mostrarModal(t('profile.photoUpdated'), data, 'success')
         await obtenerDatosProfesor()
 
     } catch (error) {
         console.log(error)
-        const mensajeError = error.response?.data || 'Error desconocido'
-        mostrarModal(' Error', mensajeError, 'error')
+        const mensajeError = error.response?.data || t('dataCenter.unknownServerError')
+        mostrarModal(t('common.error'), mensajeError, 'error')
     }
 }
 
@@ -221,7 +222,7 @@ async function guardarUsuario(datosFormulario) {
     const { idProfesor, email, password, rol, nombre } = datosFormulario
 
     if (!email || !password || !rol || !nombre || !idProfesor) {
-        mostrarModal(' Campos incompletos', 'Por favor, completa todos los campos.', 'warning')
+        mostrarModal(t('userView.incompleteFields'), t('userView.completeAllFields'), 'warning')
         return
     }
 
@@ -231,7 +232,7 @@ async function guardarUsuario(datosFormulario) {
     try {
         const data = await usuarioService.crearConProfesor(idProfesor, payload)
         console.log(' Usuario creado. Respuesta del backend:', data)
-        mostrarModal('Usuario creado', `Se ha vinculado correctamente a ${nombre}`, 'success')
+        mostrarModal(t('userView.userCreated'), t('userView.userLinkedTo', { name: nombre }), 'success')
         formularioActivo.value = null
         await obtenerDatosProfesor()
     } catch (error) {
@@ -241,11 +242,11 @@ async function guardarUsuario(datosFormulario) {
 
         if (error.response?.status === 400 && error.response.data) {
             erroresFormulario.value = error.response.data
-            const mensaje = error.response.data.mensaje || 'Error correo no valido.'
-            mostrarModal(' Error', mensaje, 'error')
+            const mensaje = error.response.data.mensaje || t('userView.invalidEmailError')
+            mostrarModal(t('common.error'), mensaje, 'error')
         } else {
-            const mensaje = error.response?.data?.mensaje || error.response?.data || 'Error al crear usuario.'
-            mostrarModal(' Error', mensaje, 'error')
+            const mensaje = error.response?.data?.mensaje || error.response?.data || t('userView.createUserError')
+            mostrarModal(t('common.error'), mensaje, 'error')
         }
     } finally {
         isLoading.value = false
@@ -256,7 +257,7 @@ async function guardarUsuario(datosFormulario) {
 async function modificarUsuario(datosFormulario) {
     const { idUsuario, email, password, rol, nombre } = datosFormulario
     if (!idUsuario) {
-        mostrarModal(' Error', 'El ID del usuario no puede ser nulo.', 'error')
+        mostrarModal(t('common.error'), t('userView.nullUserId'), 'error')
         return
     }
 
@@ -267,7 +268,7 @@ async function modificarUsuario(datosFormulario) {
         const data = await usuarioService.actualizar(idUsuario, payload)
         console.log(' Usuario modificado. Respuesta del backend:', data)
 
-        mostrarModal(' Usuario modificado', `Se ha modificado correctamente a ${nombre}`, 'success')
+        mostrarModal(t('userView.userUpdated'), t('userView.userUpdatedTo', { name: nombre }), 'success')
         formularioActivo.value = null
         await obtenerDatosProfesor()
     } catch (error) {
@@ -278,8 +279,8 @@ async function modificarUsuario(datosFormulario) {
         if (error.response?.status === 400 && error.response.data) {
             erroresFormulario.value = error.response.data
         } else {
-            const mensaje = error.response?.data?.mensaje || error.response?.data || 'Error al modificar usuario.'
-            mostrarModal(' Error', mensaje, 'error')
+            const mensaje = error.response?.data?.mensaje || error.response?.data || t('userView.updateUserError')
+            mostrarModal(t('common.error'), mensaje, 'error')
         }
     } finally {
         isLoading.value = false
@@ -293,19 +294,19 @@ async function eliminarUsuario() {
 
     if (!usuario?.id) return
 
-    const confirmado = confirm(`¿Estás seguro de eliminar el usuario vinculado a ${nombre}?`)
+    const confirmado = confirm(t('userView.confirmDeleteLinkedUser', { name: nombre }))
     if (!confirmado) return
 
     isLoading.value = true
 
     try {
         await usuarioService.eliminar(usuario.id)
-        mostrarModal(' Usuario eliminado', `El usuario de ${nombre} ha sido eliminado.`, 'success')
+        mostrarModal(t('userView.userDeleted'), t('userView.userDeletedOf', { name: nombre }), 'success')
         formularioActivo.value = null
         await obtenerDatosProfesor()
     } catch (error) {
         console.error('Error al eliminar usuario:', error)
-        mostrarModal(' Error', 'No se pudo eliminar el usuario.', 'error')
+        mostrarModal(t('common.error'), t('userView.deleteUserError'), 'error')
     } finally {
         isLoading.value = false
     }
@@ -314,7 +315,7 @@ async function eliminarUsuario() {
 const mostrarFormularioAusencia = ref(false)
 
 function onAusenciaCreada() {
-    mostrarModal(' Ausencia creada', 'La ausencia fue registrada correctamente.', 'success')
+    mostrarModal(t('teacherAbsences.absenceRegistered'), t('userView.absenceRegisteredOk'), 'success')
     mostrarFormularioAusencia.value = false
     if(profesor.value?.usuario?.id) {
         cargarAusencias(profesor.value.usuario.id)

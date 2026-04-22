@@ -1,6 +1,6 @@
 <template>
     <div class="container mt-5">
-      <h3>Formulario de {{ action === 'create' ? 'creación' : 'edición' }} para el profesor</h3>
+  <h3>{{ $t('userView.formTitle', { action: action === 'create' ? $t('userView.create') : $t('userView.edit') }) }}</h3>
   
       <div v-if="profesor">
         <FormularioCrearUsuario
@@ -18,7 +18,7 @@
   
       <div v-else class="text-center mt-4">
         <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2">Cargando datos del profesor...</p>
+        <p class="mt-2">{{ $t('userView.loadingTeacherData') }}</p>
       </div>
     </div>
   </template>

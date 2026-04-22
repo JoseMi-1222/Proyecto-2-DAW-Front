@@ -12,8 +12,8 @@
         </div>
 
         <div class="modal-body text-center pt-0">
-          <h4 class="fw-bold mb-3">¿Estás seguro?</h4>
-          <p class="text-muted mb-4">{{ mensaje || 'Esta acción no se puede deshacer.' }}</p>
+          <h4 class="fw-bold mb-3">{{ $t('confirmModal.title') }}</h4>
+          <p class="text-muted mb-4">{{ mensaje || $t('confirmModal.defaultMessage') }}</p>
           
           <div class="d-flex justify-content-center gap-2">
             <button 
@@ -21,14 +21,14 @@
               class="btn btn-outline-secondary px-4" 
               @click="$emit('cerrar')"
             >
-              Cancelar
+              {{ $t('common.cancel') }}
             </button>
             <button 
               type="button" 
               class="btn btn-danger px-4" 
               @click="$emit('confirmar')"
             >
-              Sí, eliminar
+              {{ $t('confirmModal.confirmDelete') }}
             </button>
           </div>
         </div>

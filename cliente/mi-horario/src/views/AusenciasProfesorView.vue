@@ -3,7 +3,7 @@
   
   <div class="contenedor-ausencias">
     <div>
-      <h2 class="mb-4">Mis Ausencias</h2>
+      <h2 class="mb-4">{{ $t('teacherAbsences.title') }}</h2>
 
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
         <button 
@@ -13,15 +13,15 @@
           :disabled="!idProfesorReal"
         >
           <i class="bi" :class="mostrarFormulario ? 'bi-x-lg' : 'bi-plus-lg'"></i>
-          {{ mostrarFormulario ? 'Cancelar registro' : 'Registrar Nueva Ausencia' }}
+          {{ mostrarFormulario ? $t('teacherAbsences.cancelRegister') : $t('teacherAbsences.newAbsence') }}
         </button>
 
         <div class="filtro-fecha">
-          <label class="form-label mb-0 fw-bold">Filtrar por fecha:</label>
+          <label class="form-label mb-0 fw-bold">{{ $t('teacherAbsences.filterByDate') }}</label>
           <div class="d-flex align-items-center gap-2 flex-wrap">
-            <input type="text" class="form-control" placeholder="Día" v-model="filtroDia" style="width: 60px;" />
-            <input type="text" class="form-control" placeholder="Mes" v-model="filtroMes" style="width: 60px;" />
-            <input type="text" class="form-control" placeholder="Año" v-model="filtroAnio" style="width: 80px;" />
+            <input type="text" class="form-control" :placeholder="$t('teacherAbsences.day')" v-model="filtroDia" style="width: 60px;" />
+            <input type="text" class="form-control" :placeholder="$t('teacherAbsences.month')" v-model="filtroMes" style="width: 60px;" />
+            <input type="text" class="form-control" :placeholder="$t('teacherAbsences.year')" v-model="filtroAnio" style="width: 80px;" />
             <button class="btn btn-outline-primary" @click="filtrarPorFechaAvanzado"><i class="bi bi-search"></i></button>
             <button class="btn btn-outline-secondary" @click="resetearFiltro"><i class="bi bi-arrow-counterclockwise"></i></button>
           </div>
@@ -30,7 +30,7 @@
     </div>
 
     <div v-if="cargandoId" class="alert alert-warning">
-       <div class="spinner-border spinner-border-sm me-2"></div> Cargando perfil de profesor...
+       <div class="spinner-border spinner-border-sm me-2"></div> {{ $t('teacherAbsences.loadingTeacherProfile') }}
     </div>
 
     <div v-if="mostrarFormulario && idProfesorReal" class="mb-4">
@@ -68,7 +68,7 @@
 
   <ModalConfirmacion 
     :visible="mostrarConfirmacion"
-    mensaje="¿Seguro que quieres eliminar este registro? Esta acción no se puede deshacer."
+    :mensaje="$t('teacherAbsences.confirmDelete')"
     @cerrar="mostrarConfirmacion = false"
     @confirmar="ejecutarEliminacion"
   />
@@ -76,6 +76,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ausenciaService from '../services/ausenciaService'
 import horarioService from '../services/horarioService'
 import { useAuthStore } from '../stores/auth'
@@ -87,6 +88,7 @@ import FormularioCrearAusencia from '../components/FormularioCrearAusencia.vue'
 import TablaAusencias from '../components/TablaAusencias.vue'
 
 const auth = useAuthStore()
+const { t } = useI18n()
 
 const ausencias = ref([])
 const mostrarFormulario = ref(false)
@@ -111,7 +113,7 @@ const modalTipo = ref('info')
 
 onMounted(async () => {
   if (!auth.usuario?.email) {
-    mostrarModal('Error', 'No hay usuario logueado', 'error')
+    mostrarModal(t('common.error'), t('teacherAbsences.noLoggedUser'), 'error')
     return
   }
 
@@ -122,7 +124,7 @@ onMounted(async () => {
     cargarAusencias()
   } catch (error) {
     console.error(error)
-    mostrarModal('Error', 'No se pudo identificar el perfil de profesor.', 'error')
+    mostrarModal(t('common.error'), t('teacherAbsences.identifyTeacherError'), 'error')
   } finally {
     cargandoId.value = false
   }
@@ -156,9 +158,9 @@ const ejecutarEliminacion = async () => {
   try {
     await ausenciaService.eliminarAusencia(id, fecha, idProfesorReal.value)
     await cargarAusencias()
-    mostrarModal('Éxito', 'Eliminado correctamente', 'success')
+    mostrarModal(t('common.success'), t('teacherAbsences.deletedSuccessfully'), 'success')
   } catch (error) {
-    mostrarModal('Error', 'No se pudo eliminar', 'error')
+    mostrarModal(t('common.error'), t('teacherAbsences.deleteError'), 'error')
   } finally {
     itemParaEliminar.value = null
   }
@@ -175,7 +177,7 @@ const subirYJustificar = async (event) => {
   if (!file) return 
 
   try {
-    mostrarModal('Enviando...', 'Subiendo justificante médico al servidor...', 'info')
+    mostrarModal(t('teacherAbsences.sending'), t('teacherAbsences.uploadingProof'), 'info')
     
     const nombreArchivoGuardado = await ausenciaService.subirArchivo(file)
     
@@ -183,10 +185,10 @@ const subirYJustificar = async (event) => {
     
     await cargarAusencias()
     
-    mostrarModal('Enviado', 'Justificante enviado. Queda pendiente de revisión por el administrador.', 'success')
+    mostrarModal(t('teacherAbsences.sent'), t('teacherAbsences.proofSentPendingReview'), 'success')
   } catch (error) {
     console.error("Fallo al subir justificante:", error)
-    mostrarModal('Error', 'Fallo al subir el justificante. Inténtalo de nuevo.', 'error')
+    mostrarModal(t('common.error'), t('teacherAbsences.uploadProofError'), 'error')
   } finally {
     event.target.value = ''
     fechaAJustificar.value = null
@@ -195,10 +197,10 @@ const subirYJustificar = async (event) => {
 
 const alCrearAusencia = () => {
   mostrarFormulario.value = false 
-  mostrarModal('Éxito', 'Ausencia registrada.', 'success')
+  mostrarModal(t('common.success'), t('teacherAbsences.absenceRegistered'), 'success')
   cargarAusencias()
 }
-const manejarErrorFormulario = (msg) => mostrarModal('Error', msg, 'error')
+const manejarErrorFormulario = (msg) => mostrarModal(t('common.error'), msg, 'error')
 
 const filtrarPorFechaAvanzado = () => {
   const d = filtroDia.value.padStart(2,'0'), m = filtroMes.value.padStart(2,'0'), a = filtroAnio.value

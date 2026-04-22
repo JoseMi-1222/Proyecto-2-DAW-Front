@@ -18,17 +18,17 @@
             
             <div v-if="modoSustituto" class="alert alert-info py-2 small border-0 mb-3">
               <i class="bi bi-info-circle me-1 text-info"></i> 
-              Estás creando un sustituto para <strong>{{ profesorAClonar.nombre }}</strong>. 
-              El nuevo profesor heredará todas sus clases y el profesor original será desactivado temporalmente.
+              {{ $t('teacherModal.substituteInfo1') }} <strong>{{ profesorAClonar.nombre }}</strong>. 
+              {{ $t('teacherModal.substituteInfo2') }}
             </div>
 
             <div class="mb-3">
-              <label class="form-label fw-bold">Nombre y Apellidos</label>
+              <label class="form-label fw-bold">{{ $t('teacherModal.fullName') }}</label>
               <input 
                 type="text" 
                 class="form-control" 
                 v-model="nombre" 
-                placeholder="Ej: María García López"
+                :placeholder="$t('teacherModal.fullNamePlaceholder')"
                 required
                 autofocus
               >
@@ -36,58 +36,58 @@
 
             <template v-if="!modoEdicion">
               <div class="mb-3">
-                <label class="form-label fw-bold">Abreviatura</label>
+                <label class="form-label fw-bold">{{ $t('teacherModal.shortName') }}</label>
                 <input 
                   type="text" 
                   class="form-control" 
                   v-model="abreviatura" 
-                  placeholder="Ej: MGL"
+                  :placeholder="$t('teacherModal.shortNamePlaceholder')"
                   required
                 >
               </div>
 
               <div class="mb-3">
-                <label class="form-label fw-bold">Correo Electrónico</label>
+                <label class="form-label fw-bold">{{ $t('teacherModal.email') }}</label>
                 <input 
                   type="email" 
                   class="form-control" 
                   v-model="email" 
-                  placeholder="profesor@iespoligonosur.org"
+                  :placeholder="$t('teacherModal.emailPlaceholder')"
                   required
                 >
               </div>
 
               <div v-if="!modoSustituto" class="alert alert-primary bg-opacity-10 py-2 small border-0 text-secondary">
                 <i class="bi bi-key me-1 text-primary"></i> 
-                La contraseña por defecto será <strong>Cambiame123!</strong>
+                {{ $t('teacherModal.defaultPasswordInfo') }} <strong>Cambiame123!</strong>
               </div>
             </template>
 
             <template v-if="modoEdicion && tieneUsuario">
               <div class="mb-3">
-                <label class="form-label fw-bold">Correo Electrónico</label>
+                <label class="form-label fw-bold">{{ $t('teacherModal.email') }}</label>
                 <input 
                   type="email" 
                   class="form-control" 
                   v-model="email" 
-                  placeholder="correo@ejemplo.com" 
+                  :placeholder="$t('teacherModal.emailGenericPlaceholder')" 
                   required 
                 />
               </div>
 
               <div class="mb-3">
-                <label class="form-label fw-bold">Nueva Contraseña</label>
+                <label class="form-label fw-bold">{{ $t('teacherModal.newPassword') }}</label>
                 <input 
                   type="password" 
                   class="form-control" 
                   v-model="password" 
-                  placeholder="Dejar en blanco para no cambiarla" 
+                  :placeholder="$t('teacherModal.newPasswordPlaceholder')" 
                 />
               </div>
             </template>
 
             <div v-if="modoEdicion && !tieneUsuario" class="alert alert-warning py-2 small border-0">
-              <i class="bi bi-exclamation-triangle me-1"></i> Este profesor no tiene un usuario web asignado.
+              <i class="bi bi-exclamation-triangle me-1"></i> {{ $t('teacherModal.noWebUser') }}
             </div>
 
             <div v-if="error" class="alert alert-danger py-2 small">
@@ -95,7 +95,7 @@
             </div>
 
             <div class="d-flex justify-content-end gap-2 mt-4">
-              <button type="button" class="btn btn-light" @click="cerrar">Cancelar</button>
+              <button type="button" class="btn btn-light" @click="cerrar">{{ $t('common.cancel') }}</button>
               <button type="submit" class="btn" :class="modoSustituto ? 'btn-info text-white' : 'btn-primary'" :disabled="procesando">
                 <span v-if="procesando" class="spinner-border spinner-border-sm me-2"></span>
                 {{ textoBotonGuardar }}
@@ -111,6 +111,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import profesorService from '../services/profesorService'
 import usuarioService from '../services/usuarioService'
 
@@ -129,21 +130,22 @@ const password = ref('')
 
 const procesando = ref(false)
 const error = ref('')
+const { t } = useI18n()
 
 const modoEdicion = computed(() => !!props.profesorAEditar)
 const modoSustituto = computed(() => !!props.profesorAClonar)
 const tieneUsuario = computed(() => modoEdicion.value && !!props.profesorAEditar.usuario)
 
 const tituloModal = computed(() => {
-  if (modoEdicion.value) return 'Editar Profesor y Usuario'
-  if (modoSustituto.value) return 'Registrar Sustituto'
-  return 'Nuevo Profesor'
+  if (modoEdicion.value) return t('teacherModal.editTeacherAndUser')
+  if (modoSustituto.value) return t('teacherModal.registerSubstitute')
+  return t('teacherModal.newTeacher')
 })
 
 const textoBotonGuardar = computed(() => {
-  if (modoEdicion.value) return 'Guardar Cambios'
-  if (modoSustituto.value) return 'Crear Sustituto y Clonar Horario'
-  return 'Crear Profesor'
+  if (modoEdicion.value) return t('teacherModal.saveChanges')
+  if (modoSustituto.value) return t('teacherModal.createSubstituteClone')
+  return t('teacherModal.createTeacher')
 })
 
 watch(() => props.visible, (val) => {
@@ -187,7 +189,7 @@ const guardar = async () => {
         await usuarioService.actualizar(props.profesorAEditar.usuario.id, payloadUsuario)
       }
       
-      emit('guardar-exito', 'Profesor actualizado correctamente.')
+      emit('guardar-exito', t('teacherModal.teacherUpdated'))
       
     } else if (modoSustituto.value) {
       // --- NUEVA LÓGICA: CREAR SUSTITUTO ---
@@ -196,7 +198,7 @@ const guardar = async () => {
         abreviatura: abreviatura.value.toUpperCase(),
         email: email.value
       })
-      emit('guardar-exito', `Sustituto registrado. El horario de ${props.profesorAClonar.nombre} ha sido copiado.`)
+      emit('guardar-exito', t('teacherModal.substituteRegisteredCloned', { name: props.profesorAClonar.nombre }))
       
     } else {
 
@@ -205,12 +207,12 @@ const guardar = async () => {
         abreviatura: abreviatura.value.toUpperCase(),
         email: email.value
       })
-      emit('guardar-exito', 'Profesor y cuenta creados con éxito.')
+      emit('guardar-exito', t('teacherModal.teacherAndAccountCreated'))
     }
     cerrar()
   } catch (e) {
     console.error(e)
-    error.value = e.response?.data?.message || e.response?.data || "Ocurrió un error al procesar la solicitud."
+    error.value = e.response?.data?.message || e.response?.data || t('teacherModal.processRequestError')
   } finally {
     procesando.value = false
   }

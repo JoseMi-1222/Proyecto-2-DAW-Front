@@ -1,14 +1,14 @@
 <template>
   <div v-if="visible" class="modal-overlay">
     <div class="modal-content modal-warning">
-      <h5 class="mb-3">⚠️ Cambio de Contraseña Obligatorio</h5>
+      <h5 class="mb-3">⚠️ {{ $t('passwordModal.requiredChange') }}</h5>
       <div v-if="error" class="text-danger mb-2 text-start" style="font-size: 0.9rem;">
         {{ error }}
       </div>
-      <input v-model="nuevaPassword" type="password" class="form-control mb-3" placeholder="Nueva contraseña" />
+      <input v-model="nuevaPassword" type="password" class="form-control mb-3" :placeholder="$t('profile.newPassword')" />
       <input v-model="confirmacionPassword" type="password" class="form-control mb-3"
-        placeholder="Confirmar contraseña" />
-      <button class="btn btn-primary w-100" @click="cambiar">Cambiar contraseña</button>
+        :placeholder="$t('profile.confirmPassword')" />
+      <button class="btn btn-primary w-100" @click="cambiar">{{ $t('passwordModal.changePassword') }}</button>
     </div>
   </div>
 
@@ -24,6 +24,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '../axios'
 import { useAuthStore } from '../stores/auth'
 import ModalMensaje from '../components/ModalMensaje.vue'
@@ -34,6 +35,7 @@ const props = defineProps({
 const emit = defineEmits(['cerrar'])
 
 const auth = useAuthStore()
+const { t } = useI18n()
 const nuevaPassword = ref('')
 const confirmacionPassword = ref('')
 const error = ref('')
@@ -59,12 +61,12 @@ async function cambiar() {
   error.value = ''
 
   if (!nuevaPassword.value || nuevaPassword.value.length < 6) {
-    error.value = 'La contraseña debe tener al menos 6 caracteres'
+    error.value = t('passwordModal.minLengthError')
     return
   }
 
   if (nuevaPassword.value !== confirmacionPassword.value) {
-    error.value = 'Las contraseñas no coinciden'
+    error.value = t('passwordModal.noMatchError')
     return
   }
 
@@ -81,12 +83,12 @@ async function cambiar() {
 
     emit('cerrar')
 
-    mostrarModal('Contraseña Modificada', 'Contraseña cambiada correctamente', 'success')
+    mostrarModal(t('passwordModal.passwordModified'), t('passwordModal.passwordChangedOk'), 'success')
   } catch (err) {
     console.error('Error al cambiar contraseña:', err)
-    const mensajeError = err.response?.data?.mensaje || 'Error al cambiar la contraseña'
+    const mensajeError = err.response?.data?.mensaje || t('passwordModal.changeError')
     error.value = mensajeError
-    mostrarModal('Error al cambiar contraseña', mensajeError, 'error')
+    mostrarModal(t('passwordModal.changeErrorTitle'), mensajeError, 'error')
   }
 }
 

@@ -7,18 +7,18 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="text-primary fw-bold">
         <i class="bi bi-calendar-week me-2"></i>
-        {{ esAdmin ? 'Gestión de Horarios' : 'Mi Horario Lectivo' }}
+        {{ esAdmin ? $t('home.adminTitle') : $t('home.teacherTitle') }}
       </h2>
       
       <div v-if="!esAdmin && auth.usuario" class="text-muted d-none d-md-block">
-        Hola, <strong>{{ auth.usuario.nombre }}</strong>
+        {{ $t('home.greeting') }}, <strong>{{ auth.usuario.nombre }}</strong>
       </div>
     </div>
 
     <div v-if="esAdmin" class="card shadow-sm p-4 mb-4 bg-white border-0">
       <div class="row align-items-center">
         <div class="col-md-5">
-          <label class="form-label fw-bold text-secondary small text-uppercase">Buscar Profesor/a:</label>
+          <label class="form-label fw-bold text-secondary small text-uppercase">{{ $t('home.searchTeacher') }}</label>
           
           <div class="position-relative">
             <div class="input-group">
@@ -28,7 +28,7 @@
               <input 
                 type="text" 
                 class="form-control border-start-0 ps-0" 
-                placeholder="Escribe o despliega la lista..." 
+                :placeholder="$t('home.searchPlaceholder')" 
                 v-model="busquedaProfesor"
                 @focus="mostrarLista = true"
                 @input="mostrarLista = true"
@@ -40,7 +40,7 @@
                 type="button"
                 @click="mostrarLista = !mostrarLista"
                 :aria-expanded="mostrarLista"
-                title="Mostrar lista de profesorado"
+                :title="$t('home.showTeacherList')"
               >
                 <i class="bi" :class="mostrarLista ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
               </button>
@@ -68,7 +68,7 @@
                 
                 <li v-if="profesoresFiltrados.length === 0" class="p-3 text-center text-muted small">
                   <i class="bi bi-emoji-frown me-1"></i>
-                  {{ busquedaProfesor ? 'No se encuentran coincidencias' : 'No hay profesorado disponible' }}
+                  {{ busquedaProfesor ? $t('home.noMatches') : $t('home.noTeachers') }}
                 </li>
               </ul>
             </div>
@@ -80,13 +80,13 @@
           <div v-if="idProfesorSeleccionado" class="d-flex align-items-center text-success animate__animated animate__fadeIn">
              <i class="bi bi-check-circle-fill fs-4 me-2"></i>
              <div>
-               <strong class="d-block">Profesor Seleccionado</strong>
-               Viendo horario de: {{ nombreProfesorSeleccionado }}
+               <strong class="d-block">{{ $t('home.selectedTeacher') }}</strong>
+               {{ $t('home.viewingScheduleOf') }}: {{ nombreProfesorSeleccionado }}
              </div>
           </div>
           <div v-else class="d-flex align-items-center">
              <i class="bi bi-arrow-left-circle fs-4 me-2 text-primary"></i>
-             <span>Utiliza el buscador para encontrar un docente y ver su horario completo.</span>
+             <span>{{ $t('home.searchHelp') }}</span>
           </div>
         </div>
       </div>
@@ -99,19 +99,19 @@
     <div v-else class="text-center py-5">
       <div v-if="cargandoId">
           <div class="spinner-border text-primary" role="status"></div>
-          <p class="mt-2 text-muted">Cargando perfil...</p>
+         <p class="mt-2 text-muted">{{ $t('home.loadingProfile') }}</p>
       </div>
       
       <div v-else-if="esAdmin && !idProfesorSeleccionado" class="text-muted opacity-50">
          <i class="bi bi-calendar-range display-1 mb-3 d-block"></i>
-         <h4>Esperando selección...</h4>
+        <h4>{{ $t('home.waitingSelection') }}</h4>
       </div>
       
       <div v-else class="text-danger bg-white p-4 border rounded d-inline-block shadow-sm">
          <i class="bi bi-person-x-fill fs-1 mb-2"></i>
-         <h4>Error de Vinculación</h4>
-         <p class="mb-0">No se ha encontrado tu ficha de profesor.</p>
-         <small>Tu usuario no está enlazado con ningún docente.</small>
+        <h4>{{ $t('home.linkErrorTitle') }}</h4>
+        <p class="mb-0">{{ $t('home.linkErrorMessage') }}</p>
+        <small>{{ $t('home.linkErrorHelp') }}</small>
       </div>
     </div>
 

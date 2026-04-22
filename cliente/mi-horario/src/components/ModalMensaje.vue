@@ -1,7 +1,7 @@
 <template>
     <div v-if="visible" class="modal-overlay">
       <div class="modal-content" :class="modalClass">
-        <button class="close-btn" @click="$emit('cerrar')">×</button>
+        <button class="close-btn" @click="$emit('cerrar')" :aria-label="$t('common.close')">×</button>
         <h5 class="mb-3">{{ titulo }}</h5>
         <p>{{ mensaje }}</p>
       </div>

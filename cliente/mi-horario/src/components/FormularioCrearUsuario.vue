@@ -1,7 +1,7 @@
 <template>
   <div class="formulario-container">
     <h6 class="titulo-centrado">
-      Crear usuario para:
+      {{ $t('userForm.createFor') }}
     </h6>
     <p class="titulo-centrado fw-bold ">
       {{ profesor.nombre }}
@@ -9,30 +9,30 @@
 
 
     <div class="mb-2">
-      <label class="form-label">Email</label>
-      <input type="email" class="form-control" v-model="form.email" placeholder="correo@ejemplo.com" />
+      <label class="form-label">{{ $t('userForm.email') }}</label>
+      <input type="email" class="form-control" v-model="form.email" :placeholder="$t('userForm.emailPlaceholder')" />
       <div class="text-danger" v-if="errores.email">{{ errores.email }}</div>
     </div>
 
     <div class="mb-3">
-      <label class="form-label">Contraseña</label>
+      <label class="form-label">{{ $t('userForm.password') }}</label>
       <input type="password" class="form-control" v-model="form.password" placeholder="••••••" />
       <div class="text-danger" v-if="errores.contraseña">{{ errores.contraseña }}</div>
     </div>
 
     <div class="mb-3">
-      <label class="form-label">Rol</label>
+      <label class="form-label">{{ $t('userForm.role') }}</label>
       <select class="form-select" v-model="form.rol">
-        <option disabled value="">Selecciona un rol</option>
-        <option value="profesor">Profesor</option>
-        <option value="administrador">Equipo directivo</option>
+        <option disabled value="">{{ $t('userForm.selectRole') }}</option>
+        <option value="profesor">{{ $t('userForm.roles.teacher') }}</option>
+        <option value="administrador">{{ $t('userForm.roles.adminTeam') }}</option>
       </select>
       <div class="text-danger" v-if="errores.rol">{{ errores.rol }}</div>
     </div>
 
     <div class="d-flex gap-2">
       <button class="btn btn-primary w-100" :disabled="isLoading" @click="guardar">
-        {{ isLoading ? 'Guardando...' : 'Guardar usuario' }}
+        {{ isLoading ? $t('userForm.saving') : $t('userForm.saveUser') }}
       </button>
 
     </div>

@@ -2,16 +2,16 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top w-100 shadow">
     <div class="container-fluid">
       <router-link to="/home" class="navbar-brand d-flex align-items-center">
-        <img :src="logo" alt="Logo" height="36" class="me-2" />
-        <span class="d-none d-lg-inline titulo-app">Horario IES Polígono Sur</span>
-        <span class="d-inline d-lg-none titulo-app">Polígono Sur</span>
+        <img :src="logo" :alt="$t('menu.logoAlt')" height="36" class="me-2" />
+        <span class="d-none d-lg-inline titulo-app">{{ $t('menu.brand') }}</span>
+        <span class="d-inline d-lg-none titulo-app">{{ $t('menu.shortBrand') }}</span>
       </router-link>
 
       <ul class="navbar-nav d-lg-none ms-auto">
         <li class="nav-item">
           <router-link to="/perfil" class="nav-link p-0">
             <img :src="imagenPerfil || imagenPorDefecto" class="rounded-circle me-2"
-              style="width: 32px; height: 32px; object-fit: cover;" alt="Perfil" />
+              style="width: 32px; height: 32px; object-fit: cover;" :alt="$t('menu.profilePhoto')" />
           </router-link>
         </li>
       </ul>
@@ -40,18 +40,17 @@
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="perfilDropdown">
               <li>
                 <label for="inputFotoPerfil" class="dropdown-item" style="cursor: pointer;">
-                  👤 Subir foto de Perfil
+                  👤 {{ $t('menu.uploadProfilePhoto') }}
                 </label>
                 <input id="inputFotoPerfil" type="file" accept="image/*" @change="subirImagen" style="display: none;" />
               </li>
-              <label class="dropdown-item" href="#" @click.prevent="mostrarModalPassword = true">🔐 Cambiar
-                contraseña</label>
+              <label class="dropdown-item" href="#" @click.prevent="mostrarModalPassword = true">🔐 {{ $t('menu.changePassword') }}</label>
               <li>
                 <hr class="dropdown-divider" />
               </li>
               <li>
                 <a class="dropdown-item text-danger" href="#" @click.prevent="logout">
-                  🚪 Cerrar sesión
+                  🚪 {{ $t('menu.logout') }}
                 </a>
               </li>
             </ul>
@@ -65,19 +64,19 @@
 
   <div v-if="mostrarModalPassword" class="modal-overlay">
     <div class="modal-content modal-warning">
-      <h5 class="mb-3">🔐 Cambiar Contraseña</h5>
+      <h5 class="mb-3">🔐 {{ $t('menu.changePassword') }}</h5>
 
       <div v-if="errorPassword" class="text-danger mb-2 text-start" style="font-size: 0.9rem;">
         {{ errorPassword }}
       </div>
 
-      <input v-model="nuevaPassword" type="password" class="form-control mb-3" placeholder="Nueva contraseña" />
+      <input v-model="nuevaPassword" type="password" class="form-control mb-3" :placeholder="$t('profile.newPassword')" />
       <input v-model="confirmacionPassword" type="password" class="form-control mb-3"
-        placeholder="Confirmar contraseña" />
+        :placeholder="$t('profile.confirmPassword')" />
 
       <div class="d-flex justify-content-between">
-        <button class="btn btn-secondary" @click="mostrarModalPassword = false">Cancelar</button>
-        <button class="btn btn-primary" @click="cambiarPassword">Guardar</button>
+        <button class="btn btn-secondary" @click="mostrarModalPassword = false">{{ $t('common.cancel') }}</button>
+        <button class="btn btn-primary" @click="cambiarPassword">{{ $t('teacherModal.saveChanges') }}</button>
       </div>
     </div>
   </div>
@@ -93,6 +92,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import logo from '../assets/logo_iespsur.jpeg'
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ModalMensaje from '../components/ModalMensaje.vue'
 import usuarioService from '../services/usuarioService'
 
@@ -102,6 +102,7 @@ const imagenPerfil = ref(null)
 
 const router = useRouter()
 const auth = useAuthStore()
+const { t } = useI18n()
 
 const modalVisible = ref(false)
 const modalTitulo = ref('')
@@ -139,13 +140,13 @@ function subirImagen(event) {
   usuarioService
     .subirImagen(auth.usuario.id, formData)
     .then((data) => {
-      mostrarModal('Imagen subida', data, 'success')
+      mostrarModal(t('menu.imageUploaded'), data, 'success')
       cargarImagenConToken()
     })
     .catch(err => {
       console.error('Error al subir imagen:', err)
-      const mensaje = err.response?.data || 'Error al subir la imagen'
-      mostrarModal('Error', mensaje, 'error')
+      const mensaje = err.response?.data || t('profile.photoUploadError')
+      mostrarModal(t('common.error'), mensaje, 'error')
     })
 }
 
@@ -171,12 +172,12 @@ async function cambiarPassword() {
   errorPassword.value = ''
 
   if (!nuevaPassword.value || nuevaPassword.value.length < 6) {
-    errorPassword.value = 'La contraseña debe tener al menos 6 caracteres'
+    errorPassword.value = t('passwordModal.minLengthError')
     return
   }
 
   if (nuevaPassword.value !== confirmacionPassword.value) {
-    errorPassword.value = 'Las contraseñas no coinciden'
+    errorPassword.value = t('passwordModal.noMatchError')
     return
   }
 
@@ -187,15 +188,15 @@ async function cambiarPassword() {
     auth.usuario.cambiarContraseña = false
     localStorage.setItem('usuario', JSON.stringify(auth.usuario))
 
-    mostrarModal('Contraseña Modificada', 'Contraseña cambiada correctamente', 'success')
+    mostrarModal(t('passwordModal.passwordModified'), t('passwordModal.passwordChangedOk'), 'success')
     mostrarModalPassword.value = false
     nuevaPassword.value = ''
     confirmacionPassword.value = ''
   } catch (err) {
-    const mensaje = err.response?.data?.mensaje || 'Error al cambiar la contraseña'
+    const mensaje = err.response?.data?.mensaje || t('passwordModal.changeError')
     errorPassword.value = mensaje
     console.error('Error al cambiar contraseña:', err)
-    mostrarModal('Error', mensaje, 'error')
+    mostrarModal(t('common.error'), mensaje, 'error')
   }
 }
 

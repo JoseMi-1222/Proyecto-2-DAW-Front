@@ -7,13 +7,13 @@
 
       <img
         :src="imagenProfesor || 'https://img.freepik.com/vector-premium/icono-usuario-avatar-perfil-usuario-icono-persona-imagen-perfil-silueta-neutral-genero-adecuado_697711-1132.jpg'"
-        alt="Foto del profesor" class="img-fluid rounded" style="height: 100px; width: 100px; object-fit: cover;" />
+        :alt="$t('staff.professionalPhoto')" class="img-fluid rounded" style="height: 100px; width: 100px; object-fit: cover;" />
       <div class="flex-grow-1 ms-md-3 mt-0 mt-md-0 text-center text-md-start">
 
         <div class="info-profesor">
           <h5 class="mb-1 mt-md-4 mt-0">{{ profesor.nombre }}</h5>
           <p class="mb-0 text-muted" v-if="profesor.departamento">{{ profesor.departamento }}</p>
-          <p class="mb-0" v-if="profesor.usuario"><strong>Email:</strong> {{ profesor.usuario.email }}</p>
+          <p class="mb-0" v-if="profesor.usuario"><strong>{{ $t('userForm.email') }}:</strong> {{ profesor.usuario.email }}</p>
         </div>
       </div>
     </div>
@@ -26,10 +26,12 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import usuarioService from '../services/usuarioService'
 
 const imagenProfesor = ref(null)
 const inputArchivo = ref(null)
+const { t } = useI18n()
 
 const props = defineProps({
   profesor: Object,
@@ -84,13 +86,13 @@ async function subirImagenProfesor(event) {
 
   try {
     await usuarioService.subirImagen(props.profesor.usuario.id, formData)
-    alert(' Imagen actualizada')
+    alert(t('profile.photoUpdated'))
     cargarImagenProfesor()
     emit('imagenSubida')
 
   } catch (error) {
     console.error(' Error al subir imagen del profesor:', error)
-    alert('Error al subir imagen')
+    alert(t('profile.photoUploadError'))
   }
 }
 

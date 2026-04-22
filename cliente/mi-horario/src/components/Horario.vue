@@ -1,13 +1,13 @@
 <template>
   <div v-if="cargando" class="text-center py-5">
     <div class="spinner-border text-primary" role="status"></div>
-    <p class="mt-2 text-muted">Cargando tu horario...</p>
+    <p class="mt-2 text-muted">{{ $t('schedule.loading') }}</p>
   </div>
 
   <div v-else class="horario-container">
     
     <div v-if="!horarioActual.length" class="alert alert-warning text-center">
-      <i class="bi bi-exclamation-triangle me-2"></i> No hay datos de horario para este profesor.
+      <i class="bi bi-exclamation-triangle me-2"></i> {{ $t('schedule.noData') }}
     </div>
 
     <div v-else class="table-responsive rounded shadow-sm bg-white">
@@ -15,7 +15,7 @@
         
         <thead class="bg-secondary text-white small text-uppercase">
           <tr>
-            <th style="width: 100px;">Hora</th>
+            <th style="width: 100px;">{{ $t('schedule.time') }}</th>
             <th v-for="dia in diasSemana" :key="dia">{{ dia }}</th>
           </tr>
         </thead>
@@ -41,18 +41,18 @@
                   </div>
                   
                   <div class="text-muted small mt-1" style="font-size: 0.75rem;">
-                     {{ getCelda(dia, franja.inicio).curso?.nombre || 'Sin curso' }}
+                     {{ getCelda(dia, franja.inicio).curso?.nombre || $t('schedule.noCourse') }}
                   </div>
 
                   <div v-if="getCelda(dia, franja.inicio).aula" class="mt-1">
                     <span class="badge bg-white text-secondary border shadow-sm" style="font-weight: normal;">
-                      Aula {{ getCelda(dia, franja.inicio).aula.codigo }}
+                      {{ $t('common.classroom') }} {{ getCelda(dia, franja.inicio).aula.codigo }}
                     </span>
                   </div>
                 </div>
                 
                 <div v-else class="text-muted opacity-25 small">
-                  -
+                  {{ $t('common.dash') }}
                 </div>
 
               </div>
@@ -65,7 +65,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import horarioService from '../services/horarioService'
 
 const props = defineProps({
@@ -77,11 +78,18 @@ const props = defineProps({
 
 const horarioActual = ref([])
 const cargando = ref(false)
+const { t } = useI18n()
 
-const diasSemana = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
+const diasSemana = computed(() => [
+  t('schedule.days.monday'),
+  t('schedule.days.tuesday'),
+  t('schedule.days.wednesday'),
+  t('schedule.days.thursday'),
+  t('schedule.days.friday')
+])
 const mapaDias = {
-  'L': 'LUNES', 'M': 'MARTES', 'X': 'MIERCOLES', 'MI': 'MIERCOLES',
-  'J': 'JUEVES', 'V': 'VIERNES', 'S': 'SABADO', 'D': 'DOMINGO'
+  'L': 'monday', 'M': 'tuesday', 'X': 'wednesday', 'MI': 'wednesday',
+  'J': 'thursday', 'V': 'friday', 'S': 'saturday', 'D': 'sunday'
 }
 const franjasDefecto = [
   { id: 1, inicio: '08:15', fin: '09:15' },
@@ -123,8 +131,9 @@ const getCelda = (diaColumna, franjaInicio) => {
     if (!h.franja) return false
     
     const diaBackRaw = h.dia ? h.dia.toUpperCase().trim() : ''
-    const diaBackNormalizado = mapaDias[diaBackRaw] || diaBackRaw
-    const coincideDia = diaBackNormalizado === diaColumna
+    const diaBackNormalizado = mapaDias[diaBackRaw]
+    const diaTraducido = diaBackNormalizado ? t(`schedule.days.${diaBackNormalizado}`) : diaBackRaw
+    const coincideDia = diaTraducido === diaColumna
 
     let horaBack, minBack
     const val = h.franja.horaInicio

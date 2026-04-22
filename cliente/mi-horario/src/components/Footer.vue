@@ -2,14 +2,14 @@
   <footer class="footer-global text-white py-4 mt-5">
     <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
       <div class="d-flex align-items-center mb-3 mb-md-0">
-        <img :src="logoSrc" alt="Logo IES Polígono Sur" height="50" class="me-3" />
+        <img :src="logoSrc" :alt="$t('footer.logoAlt')" height="50" class="me-3" />
         <div>
-          <h5 class="mb-0">IES Polígono Sur</h5>
-          <small>Sevilla, Andalucía</small>
+          <h5 class="mb-0">{{ $t('footer.schoolName') }}</h5>
+          <small>{{ $t('footer.location') }}</small>
         </div>
       </div>
       <div>
-        <small>&copy; {{ new Date().getFullYear() }} - Todos los derechos reservados</small>
+        <small>&copy; {{ new Date().getFullYear() }} - {{ $t('footer.rights') }}</small>
       </div>
     </div>
   </footer>

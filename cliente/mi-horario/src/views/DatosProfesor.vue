@@ -5,6 +5,7 @@
       type="button"
       data-bs-toggle="offcanvas"
       data-bs-target="#sidePanel"
+      :aria-label="$t('menu.open')"
       style="font-size: 1.5rem; padding: 8px 16px;"
     >
       &#9776;
@@ -17,8 +18,8 @@
 
   <div class="offcanvas offcanvas-start" tabindex="-1" id="sidePanel" aria-labelledby="sidePanelLabel">
     <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="sidePanelLabel">Menú lateral</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+      <h5 class="offcanvas-title" id="sidePanelLabel">{{ $t('menu.titulo') }}</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" :aria-label="$t('common.close')"></button>
     </div>
 
     <div class="offcanvas-body">
@@ -30,17 +31,17 @@
       />
 
       <router-link to="/home" class="btn btn-primary w-100 mb-2">
-        Inicio
+        {{ $t('menu.inicio') }}
       </router-link>
       <button class="btn btn-primary w-100 mb-2" @click="triggerFileSelect">
-        Subir archivo de datos
+        {{ $t('menu.datos') }}
       </button>
       <router-link to="/datos-profesorado" class="btn btn-primary w-100 mb-2">
-        Datos profesorado
+        {{ $t('menu.profesores') }}
       </router-link>
 
-      <button class="btn btn-primary w-100 mb-2">Generar partes diario</button>
-      <button class="btn btn-primary w-100 mb-2">Ausencia</button>
+      <button class="btn btn-primary w-100 mb-2">{{ $t('staff.title') }}</button>
+      <button class="btn btn-primary w-100 mb-2">{{ $t('menu.ausencias') }}</button>
     </div>
   </div>
 
@@ -50,13 +51,13 @@
     <div class="d-flex align-items-center mb-3">
       <img
         src="https://via.placeholder.com/80"
-        alt="Foto del profesor"
+        :alt="$t('staff.photoAlt')"
         class="rounded-circle me-3"
       />
       <div class="btn-group">
-        <button class="btn btn-success">Crear usuario</button>
-        <button class="btn btn-warning">Modificar usuario</button>
-        <button class="btn btn-danger">Borrar usuario</button>
+        <button class="btn btn-success">{{ $t('userView.createUser') }}</button>
+        <button class="btn btn-warning">{{ $t('userView.editUser') }}</button>
+        <button class="btn btn-danger">{{ $t('userView.deleteUser') }}</button>
       </div>
     </div>
 

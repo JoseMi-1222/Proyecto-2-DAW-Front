@@ -1,6 +1,6 @@
 <template>
   <div v-if="ausencias.length === 0" class="alert alert-info shadow-sm">
-    <i class="bi bi-info-circle me-2"></i>No hay ausencias registradas.
+    <i class="bi bi-info-circle me-2"></i>{{ $t('absenceTable.noAbsences') }}
   </div>
 
   <TransitionGroup name="fade" tag="div">
@@ -18,12 +18,12 @@
               :disabled="todasJustificadas(ausenciaDia.lstAusenciaFecha)"
             >
               <i class="bi" :class="todasJustificadas(ausenciaDia.lstAusenciaFecha) ? 'bi-check-circle' : 'bi-upload'"></i>
-              {{ todasJustificadas(ausenciaDia.lstAusenciaFecha) ? 'Día Justificado' : 'Subir Justificante' }}
+              {{ todasJustificadas(ausenciaDia.lstAusenciaFecha) ? $t('absenceTable.dayJustified') : $t('absenceTable.uploadProof') }}
             </button>
 
             <button class="btn btn-sm btn-danger border-0" 
                     @click="$emit('eliminarDia', { fecha: ausenciaDia.fecha })" 
-                    title="Eliminar todo el día">
+                    :title="$t('absenceTable.deleteWholeDay')">
               <i class="bi bi-trash-fill"></i>
             </button>
           </div>
@@ -33,13 +33,13 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
               <tr>
-                <th>Hora</th>
-                <th>Asignatura</th>
-                <th>Aula</th>
-                <th>Curso</th>
-                <th>Instrucciones</th>
-                <th class="text-center">Estado</th>
-                <th class="text-center">Acción</th>
+                <th>{{ $t('absenceTable.table.time') }}</th>
+                <th>{{ $t('absenceTable.table.subject') }}</th>
+                <th>{{ $t('absenceTable.table.classroom') }}</th>
+                <th>{{ $t('absenceTable.table.course') }}</th>
+                <th>{{ $t('absenceTable.table.instructions') }}</th>
+                <th class="text-center">{{ $t('absenceTable.table.status') }}</th>
+                <th class="text-center">{{ $t('absenceTable.table.action') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -50,19 +50,19 @@
                   </span>
                 </td>
                 <td class="fw-bold text-primary">{{ ausencia.horario.asignatura.nombre }}</td>
-                <td>{{ ausencia.horario.aula?.codigo || '—' }}</td>
-                <td>{{ ausencia.horario.curso?.nombre || '—' }}</td>
+                <td>{{ ausencia.horario.aula?.codigo || $t('common.dash') }}</td>
+                <td>{{ ausencia.horario.curso?.nombre || $t('common.dash') }}</td>
                 <td>{{ ausencia.descripcion }}</td>
                 <td class="text-center">
                   <span class="badge rounded-pill" 
                         :class="ausencia.justificada ? 'bg-success' : 'bg-warning text-dark'">
-                    {{ ausencia.justificada ? 'Justificada' : 'Pendiente' }}
+                    {{ ausencia.justificada ? $t('common.justified') : $t('common.pending') }}
                   </span>
                 </td>
                 <td class="text-center">
                   <button class="btn btn-sm btn-outline-danger border-0" 
                           @click="$emit('eliminarUna', { id: ausencia.id })" 
-                          title="Eliminar esta hora">
+                          :title="$t('absenceTable.deleteThisHour')">
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
@@ -86,9 +86,14 @@ defineProps({
 
 defineEmits(['eliminarDia', 'eliminarUna', 'justificarDia']);
 
+import { useI18n } from 'vue-i18n'
+
+const { locale } = useI18n()
+
 const formatFecha = (fechaISO) => {
   const fecha = new Date(fechaISO);
-  return fecha.toLocaleDateString();
+  const targetLocale = locale.value === 'en' ? 'en-US' : 'es-ES'
+  return fecha.toLocaleDateString(targetLocale);
 };
 
 const formatearHora = (horaStr) => {

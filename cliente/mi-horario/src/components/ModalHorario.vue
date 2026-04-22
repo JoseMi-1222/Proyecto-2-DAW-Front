@@ -7,7 +7,7 @@
         
         <div class="modal-header bg-dark text-white">
           <h5 class="modal-title fw-bold">
-            <i class="bi bi-calendar-week me-2"></i>Horario: {{ profesor?.nombre }}
+            <i class="bi bi-calendar-week me-2"></i>{{ $t('scheduleModal.title') }}: {{ profesor?.nombre }}
           </h5>
           <button type="button" class="btn-close btn-close-white" @click="cerrar"></button>
         </div>
@@ -15,7 +15,7 @@
         <div class="modal-body p-0 bg-light">
           <div v-if="cargando" class="text-center py-5">
             <div class="spinner-border text-primary"></div>
-            <p class="mt-2 text-muted">Cargando horario...</p>
+            <p class="mt-2 text-muted">{{ $t('scheduleModal.loading') }}</p>
           </div>
 
           <div v-else class="p-4">
@@ -23,7 +23,7 @@
               <table class="table table-bordered text-center mb-0 align-middle">
                 <thead class="bg-secondary text-white small text-uppercase">
                   <tr>
-                    <th style="width: 100px;">Hora</th>
+                    <th style="width: 100px;">{{ $t('schedule.time') }}</th>
                     <th v-for="dia in diasSemana" :key="dia">{{ dia }}</th>
                   </tr>
                 </thead>
@@ -46,7 +46,7 @@
                         <div v-if="getCelda(dia, franja.inicio)">
                           <div class="fw-bold text-primary small">{{ getCelda(dia, franja.inicio).asignatura.nombre }}</div>
                           <div class="text-muted small" style="font-size: 0.75rem;">
-                             {{ getCelda(dia, franja.inicio).curso?.nombre || 'Sin curso' }}
+                             {{ getCelda(dia, franja.inicio).curso?.nombre || $t('schedule.noCourse') }}
                           </div>
                         </div>
                         
@@ -65,12 +65,12 @@
 
         <div class="modal-footer bg-white">
           <div class="me-auto text-muted small">
-            <i class="bi bi-info-circle me-1"></i>Haz clic en una casilla para editar.
+            <i class="bi bi-info-circle me-1"></i>{{ $t('scheduleModal.clickCellToEdit') }}
           </div>
-          <button type="button" class="btn btn-light" @click="cerrar">Cancelar</button>
+          <button type="button" class="btn btn-light" @click="cerrar">{{ $t('common.cancel') }}</button>
           <button type="button" class="btn btn-primary" @click="guardarCambios" :disabled="guardando">
             <span v-if="guardando" class="spinner-border spinner-border-sm me-2"></span>
-            Guardar Cambios
+            {{ $t('teacherModal.saveChanges') }}
           </button>
         </div>
 
@@ -90,12 +90,12 @@
         <div class="modal-body">
           
           <div class="mb-3 position-relative">
-            <label class="form-label small fw-bold">Asignatura</label>
+            <label class="form-label small fw-bold">{{ $t('scheduleModal.subject') }}</label>
             
             <input 
               type="text" 
               class="form-control form-control-sm" 
-              placeholder="Buscar asignatura..." 
+              :placeholder="$t('scheduleModal.searchSubject')" 
               v-model="busquedaAsignatura"
               @focus="mostrarLista = true"
               autocomplete="off"
@@ -104,7 +104,7 @@
             <div v-if="mostrarLista && busquedaAsignatura" class="lista-flotante shadow-sm border rounded">
               <ul class="list-unstyled mb-0">
                 <li @click="seleccionarAsignatura(null)" class="p-2 border-bottom text-muted fst-italic">
-                  -- Hora Libre (Borrar) --
+                  {{ $t('scheduleModal.freeSlotDelete') }}
                 </li>
                 <li 
                   v-for="asig in asignaturasFiltradas" 
@@ -115,7 +115,7 @@
                   {{ asig.nombre }}
                 </li>
                 <li v-if="asignaturasFiltradas.length === 0" class="p-2 text-muted text-center small">
-                  No hay coincidencias
+                  {{ $t('scheduleModal.noMatches') }}
                 </li>
               </ul>
             </div>
@@ -126,16 +126,16 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label small fw-bold">Curso / Grupo</label>
+            <label class="form-label small fw-bold">{{ $t('scheduleModal.courseGroup') }}</label>
             <select class="form-select form-select-sm" v-model="cursoSeleccionado">
-              <option :value="null">-- Sin Curso Específico --</option>
+              <option :value="null">{{ $t('scheduleModal.noSpecificCourse') }}</option>
               <option v-for="curso in listaCursos" :key="curso.id" :value="curso">
                 {{ curso.nombre }}
               </option>
             </select>
           </div>
           
-          <button class="btn btn-primary btn-sm w-100" @click="confirmarEdicionCelda">Aplicar Cambio</button>
+          <button class="btn btn-primary btn-sm w-100" @click="confirmarEdicionCelda">{{ $t('scheduleModal.applyChange') }}</button>
         </div>
       </div>
     </div>
@@ -144,6 +144,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import horarioService from '../services/horarioService'
 
 const props = defineProps({
@@ -165,11 +166,18 @@ const cursoSeleccionado = ref(null)
 
 const busquedaAsignatura = ref('')
 const mostrarLista = ref(false)
+const { t } = useI18n()
 
-const diasSemana = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
+const diasSemana = computed(() => [
+  t('schedule.days.monday'),
+  t('schedule.days.tuesday'),
+  t('schedule.days.wednesday'),
+  t('schedule.days.thursday'),
+  t('schedule.days.friday')
+])
 const mapaDias = {
-  'L': 'LUNES', 'M': 'MARTES', 'X': 'MIERCOLES', 'MI': 'MIERCOLES',
-  'J': 'JUEVES', 'V': 'VIERNES', 'S': 'SABADO', 'D': 'DOMINGO'
+  'L': 'monday', 'M': 'tuesday', 'X': 'wednesday', 'MI': 'wednesday',
+  'J': 'thursday', 'V': 'friday', 'S': 'saturday', 'D': 'sunday'
 }
 const franjasDefecto = [
   { id: 1, inicio: '08:15', fin: '09:15' },
@@ -223,8 +231,9 @@ const getCelda = (diaColumna, franjaInicio) => {
     if (!h.franja) return false
     
     const diaBackRaw = h.dia ? h.dia.toUpperCase().trim() : ''
-    const diaBackNormalizado = mapaDias[diaBackRaw] || diaBackRaw
-    const coincideDia = diaBackNormalizado === diaColumna
+    const diaBackNormalizado = mapaDias[diaBackRaw]
+    const diaTraducido = diaBackNormalizado ? t(`schedule.days.${diaBackNormalizado}`) : diaBackRaw
+    const coincideDia = diaTraducido === diaColumna
 
     let horaBack, minBack
     const val = h.franja.horaInicio
@@ -274,7 +283,7 @@ const confirmarEdicionCelda = () => {
   
   horarioActual.value = horarioActual.value.filter(h => {
     const diaBackRaw = h.dia ? h.dia.toUpperCase().trim() : ''
-    const diaBackNormalizado = mapaDias[diaBackRaw] || diaBackRaw
+    const diaBackNormalizado = mapaDias[diaBackRaw] ? t(`schedule.days.${mapaDias[diaBackRaw]}`) : diaBackRaw
     
     let horaBack, minBack
     const val = h.franja.horaInicio
@@ -314,11 +323,11 @@ const guardarCambios = async () => {
   guardando.value = true
   try {
     await horarioService.guardarHorario(props.profesor.idProfesor, horarioActual.value)
-    emit('guardar-exito', 'Horario actualizado correctamente.')
+    emit('guardar-exito', t('scheduleModal.updatedSuccessfully'))
     emit('cerrar')
   } catch (e) {
     console.error(e)
-    alert('Error al guardar el horario.')
+    alert(t('scheduleModal.saveError'))
   } finally {
     guardando.value = false
   }

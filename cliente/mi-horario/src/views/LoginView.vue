@@ -4,46 +4,46 @@
       <div class="card-container" :class="{ flipped: mostrarRecuperacion }">
         <div class="card-side front card shadow p-4 w-100">
           <div class="text-center mb-4">
-            <img src="../assets/logo_iespsur.jpeg" alt="logo" style="width: 60px;" />
+            <img src="../assets/logo_iespsur.jpeg" :alt="$t('login.logoAlt')" style="width: 60px;" />
           </div>
           <form @submit.prevent="login">
             <div class="mb-3">
-              <label class="form-label text-muted">Correo Electrónico</label>
+              <label class="form-label text-muted">{{ $t('login.email') }}</label>
               <input v-model="username" type="text" class="form-control" required />
             </div>
             <div class="mb-3">
-              <label class="form-label text-muted">Contraseña</label>
+              <label class="form-label text-muted">{{ $t('login.password') }}</label>
               <input v-model="password" type="password" class="form-control" required />
             </div>
             <div v-if="errorLogin" class="text-danger text-center mb-3">
-              Credenciales incorrectas
+              {{ $t('login.invalidCredentials') }}
             </div>
-            <button type="submit" class="btn btn-primary w-100">Iniciar sesión</button>
+            <button type="submit" class="btn btn-primary w-100">{{ $t('login.submit') }}</button>
           </form>
           <div class="text-center mt-3">
             <a href="#" class="text-primary text-decoration-none" @click.prevent="mostrarRecuperacion = true">
-              He olvidado la contraseña
+              {{ $t('login.forgotPassword') }}
             </a>
           </div>
         </div>
 
         <div class="card-side back card shadow p-4 w-100">
           <div class="text-center mb-4">
-            <img src="../assets/logo_iespsur.jpeg" alt="logo" style="width: 60px;" />
+            <img src="../assets/logo_iespsur.jpeg" :alt="$t('login.logoAlt')" style="width: 60px;" />
           </div>
-          <h5 class="mb-4">Recuperar contraseña</h5>
+          <h5 class="mb-4">{{ $t('login.recoverTitle') }}</h5>
           
-          <p class="mt-4">Escriba el correo de la contraseña olvidada</p>
+          <p class="mt-4">{{ $t('login.recoverHint') }}</p>
           <form @submit.prevent="enviarCorreo">
-            <input v-model="correo" type="email" class="form-control mb-3" placeholder="Introduce tu correo" required />
-            <button type="submit" class="btn btn-primary w-100 mt-2">Enviar</button>
+            <input v-model="correo" type="email" class="form-control mb-3" :placeholder="$t('login.recoverPlaceholder')" required />
+            <button type="submit" class="btn btn-primary w-100 mt-2">{{ $t('login.send') }}</button>
           </form>
           <div v-if="mensaje" class="alert alert-info mt-3 text-center">
             {{ mensaje }}
           </div>
           <div class="text-center mt-3">
             <a href="#" @click.prevent="mostrarRecuperacion = false" class="text-secondary text-decoration-none">
-              Volver al inicio de sesión
+              {{ $t('login.backToLogin') }}
             </a>
           </div>
         </div>
@@ -58,11 +58,13 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import authService from '../services/authService'
 
 const router = useRouter()
 const auth = useAuthStore()
+const { t } = useI18n()
 
 const username = ref('')
 const password = ref('')
@@ -107,7 +109,7 @@ async function enviarCorreo() {
     console.error(' Error completo:', error)
     console.log(' error.response:', error.response)
 
-    mensaje.value = error.response?.data.message
+    mensaje.value = error.response?.data.message || t('login.recoverError')
   }
 }
 
