@@ -85,7 +85,13 @@ async function login() {
 
   const ok = await auth.login(username.value, password.value)
   if (ok) {
-    router.push('/home')
+    const usuarioLogueado = auth.usuario || auth.user; 
+
+    if (usuarioLogueado && usuarioLogueado.primerLogin === true) {
+      router.push('/perfil') 
+    } else {
+      router.push('/home')
+    }
   } else {
     errorLogin.value = true
   }
@@ -99,7 +105,7 @@ async function enviarCorreo() {
     mensaje.value = data
   } catch (error) {
     console.error(' Error completo:', error)
-    console.log('⚠️ error.response:', error.response)
+    console.log(' error.response:', error.response)
 
     mensaje.value = error.response?.data.message
   }

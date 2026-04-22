@@ -64,7 +64,7 @@
               <th>Usuario / Email</th>
               <th>Asignaturas</th>
               <th class="text-center">Estado</th>
-              <th class="text-end pe-4" style="min-width: 180px;">Acciones</th>
+              <th class="text-end pe-4" style="min-width: 220px;">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -121,6 +121,15 @@
                     <i :class="prof.activo !== false ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill'"></i>
                   </button>
 
+                  <button 
+                    class="btn btn-sm btn-info text-white" 
+                    title="Crear Sustituto (Clonar Horario)" 
+                    @click="abrirModalSustituto(prof)"
+                    :disabled="prof.activo === false"
+                  >
+                    <i class="bi bi-briefcase-fill"></i>
+                  </button>
+
                   <button class="btn btn-sm btn-light text-danger" title="Eliminar Definitivamente" @click="confirmarBorrado(prof)">
                     <i class="bi bi-trash"></i>
                   </button>
@@ -143,6 +152,7 @@
     <ModalProfesor 
       :visible="mostrarModalProfe"
       :profesorAEditar="profesorSeleccionado"
+      :profesorAClonar="profesorOriginalAClonar"
       @cerrar="cerrarModalProfe"
       @guardar-exito="manejarExito"
     />
@@ -174,7 +184,7 @@ import ModalHorario from '../components/ModalHorario.vue'
 
 const profesores = ref([])
 const busqueda = ref('')
-const verDesactivados = ref(false) // NUEVO: Estado del interruptor
+const verDesactivados = ref(false)
 const paginaActual = ref(0)
 const totalPaginas = ref(0)
 const elementosPorPagina = ref(10)
@@ -184,6 +194,7 @@ let timeoutBusqueda = null
 
 const mostrarModalProfe = ref(false)
 const profesorSeleccionado = ref(null) 
+const profesorOriginalAClonar = ref(null) 
 
 const mostrarModalBorrar = ref(false)
 const profesorABorrar = ref(null)
@@ -198,7 +209,6 @@ onMounted(() => {
 const cargarProfesores = async () => {
   cargando.value = true
   try {
-    // Si tu backend soporta filtrar por estado, deberías pasarle verDesactivados.value
     const data = await profesorService.obtenerProfesoresGestion(
       busqueda.value, paginaActual.value, elementosPorPagina.value, verDesactivados.value
     )
@@ -240,7 +250,6 @@ const manejarExito = (mensajeRecibido) => {
   mostrarNotificacion(texto)
 }
 
-// --- NUEVA FUNCIÓN: ALTERNAR ESTADO ---
 const alternarEstadoProfesor = async (profesor) => {
   const nuevoEstado = profesor.activo === false ? true : false;
   try {
@@ -254,18 +263,27 @@ const alternarEstadoProfesor = async (profesor) => {
 }
 
 const abrirModalCrear = () => {
+  profesorOriginalAClonar.value = null
   profesorSeleccionado.value = null
   mostrarModalProfe.value = true
 }
 
 const abrirModalEditar = (profesor) => {
+  profesorOriginalAClonar.value = null
   profesorSeleccionado.value = { ...profesor }
+  mostrarModalProfe.value = true
+}
+
+const abrirModalSustituto = (profesor) => {
+  profesorOriginalAClonar.value = { ...profesor }
+  profesorSeleccionado.value = null
   mostrarModalProfe.value = true
 }
 
 const cerrarModalProfe = () => {
   mostrarModalProfe.value = false
   profesorSeleccionado.value = null
+  profesorOriginalAClonar.value = null
 }
 
 const confirmarBorrado = (profesor) => {

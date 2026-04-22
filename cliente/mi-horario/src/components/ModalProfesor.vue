@@ -5,10 +5,10 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
         
-        <div class="modal-header bg-primary text-white">
+        <div class="modal-header text-white" :class="modoSustituto ? 'bg-info' : 'bg-primary'">
           <h5 class="modal-title fw-bold">
-            <i :class="modoEdicion ? 'bi-pencil-square' : 'bi-person-plus-fill'" class="me-2"></i>
-            {{ modoEdicion ? 'Editar Profesor y Usuario' : 'Nuevo Profesor' }}
+            <i :class="modoEdicion ? 'bi-pencil-square' : modoSustituto ? 'bi-briefcase-fill' : 'bi-person-plus-fill'" class="me-2"></i>
+            {{ tituloModal }}
           </h5>
           <button type="button" class="btn-close btn-close-white" @click="cerrar"></button>
         </div>
@@ -16,6 +16,12 @@
         <div class="modal-body p-4">
           <form @submit.prevent="guardar">
             
+            <div v-if="modoSustituto" class="alert alert-info py-2 small border-0 mb-3">
+              <i class="bi bi-info-circle me-1 text-info"></i> 
+              Estás creando un sustituto para <strong>{{ profesorAClonar.nombre }}</strong>. 
+              El nuevo profesor heredará todas sus clases y el profesor original será desactivado temporalmente.
+            </div>
+
             <div class="mb-3">
               <label class="form-label fw-bold">Nombre y Apellidos</label>
               <input 
@@ -51,9 +57,9 @@
                 >
               </div>
 
-              <div class="alert alert-info py-2 small border-0 bg-light text-secondary">
-                <i class="bi bi-info-circle me-1 text-primary"></i> 
-                Se creará su perfil y su usuario de acceso. La contraseña por defecto será <strong>Cambiame123!</strong>
+              <div v-if="!modoSustituto" class="alert alert-primary bg-opacity-10 py-2 small border-0 text-secondary">
+                <i class="bi bi-key me-1 text-primary"></i> 
+                La contraseña por defecto será <strong>Cambiame123!</strong>
               </div>
             </template>
 
@@ -90,9 +96,9 @@
 
             <div class="d-flex justify-content-end gap-2 mt-4">
               <button type="button" class="btn btn-light" @click="cerrar">Cancelar</button>
-              <button type="submit" class="btn btn-primary" :disabled="procesando">
+              <button type="submit" class="btn" :class="modoSustituto ? 'btn-info text-white' : 'btn-primary'" :disabled="procesando">
                 <span v-if="procesando" class="spinner-border spinner-border-sm me-2"></span>
-                {{ modoEdicion ? 'Guardar Cambios' : 'Crear Profesor' }}
+                {{ textoBotonGuardar }}
               </button>
             </div>
           </form>
@@ -110,39 +116,50 @@ import usuarioService from '../services/usuarioService'
 
 const props = defineProps({
   visible: Boolean,
-  profesorAEditar: Object
+  profesorAEditar: Object,
+  profesorAClonar: Object 
 })
 
 const emit = defineEmits(['cerrar', 'guardar-exito'])
 
-// Variables del formulario
 const nombre = ref('')
 const abreviatura = ref('')
 const email = ref('')
 const password = ref('')
 
-// Estados
 const procesando = ref(false)
 const error = ref('')
 
-// Computados
 const modoEdicion = computed(() => !!props.profesorAEditar)
+const modoSustituto = computed(() => !!props.profesorAClonar)
 const tieneUsuario = computed(() => modoEdicion.value && !!props.profesorAEditar.usuario)
 
-// Rellenamos el formulario al abrir
+const tituloModal = computed(() => {
+  if (modoEdicion.value) return 'Editar Profesor y Usuario'
+  if (modoSustituto.value) return 'Registrar Sustituto'
+  return 'Nuevo Profesor'
+})
+
+const textoBotonGuardar = computed(() => {
+  if (modoEdicion.value) return 'Guardar Cambios'
+  if (modoSustituto.value) return 'Crear Sustituto y Clonar Horario'
+  return 'Crear Profesor'
+})
+
 watch(() => props.visible, (val) => {
-  if (val && props.profesorAEditar) {
-    nombre.value = props.profesorAEditar.nombre || ''
-    abreviatura.value = props.profesorAEditar.abreviatura || ''
-    email.value = props.profesorAEditar.usuario?.email || ''
-    password.value = '' // Siempre la vaciamos por seguridad
-  } else {
-    nombre.value = ''
-    abreviatura.value = ''
-    email.value = ''
+  if (val) {
+    if (props.profesorAEditar) {
+      nombre.value = props.profesorAEditar.nombre || ''
+      abreviatura.value = props.profesorAEditar.abreviatura || ''
+      email.value = props.profesorAEditar.usuario?.email || ''
+    } else {
+      nombre.value = ''
+      abreviatura.value = ''
+      email.value = ''
+    }
     password.value = ''
+    error.value = ''
   }
-  error.value = ''
 })
 
 const cerrar = () => emit('cerrar')
@@ -154,29 +171,35 @@ const guardar = async () => {
   
   try {
     if (modoEdicion.value) {
-      // 1. Actualizamos el nombre del Profesor
       await profesorService.actualizarProfesor(props.profesorAEditar.idProfesor, { 
         nombre: nombre.value 
       })
 
-      // 2. Si tiene usuario, le actualizamos Email y/o Contraseña
       if (tieneUsuario.value) {
         const payloadUsuario = {
           nombre: nombre.value,
           email: email.value,
-          rol: props.profesorAEditar.usuario.rol // Mantenemos el rol que ya tenía en BD
+          rol: props.profesorAEditar.usuario.rol 
         }
         if (password.value) {
           payloadUsuario.password = password.value
         }
-        
         await usuarioService.actualizar(props.profesorAEditar.usuario.id, payloadUsuario)
       }
       
       emit('guardar-exito', 'Profesor actualizado correctamente.')
       
+    } else if (modoSustituto.value) {
+      // --- NUEVA LÓGICA: CREAR SUSTITUTO ---
+      await profesorService.crearSustituto(props.profesorAClonar.idProfesor, { 
+        nombre: nombre.value,
+        abreviatura: abreviatura.value.toUpperCase(),
+        email: email.value
+      })
+      emit('guardar-exito', `Sustituto registrado. El horario de ${props.profesorAClonar.nombre} ha sido copiado.`)
+      
     } else {
-      // MODO CREACIÓN
+
       await profesorService.crearProfesorCompleto({ 
         nombre: nombre.value,
         abreviatura: abreviatura.value.toUpperCase(),
@@ -187,7 +210,7 @@ const guardar = async () => {
     cerrar()
   } catch (e) {
     console.error(e)
-    error.value = e.response?.data?.message || e.response?.data?.error || "Ocurrió un error al procesar la solicitud."
+    error.value = e.response?.data?.message || e.response?.data || "Ocurrió un error al procesar la solicitud."
   } finally {
     procesando.value = false
   }

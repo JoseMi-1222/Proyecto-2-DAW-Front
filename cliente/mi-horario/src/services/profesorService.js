@@ -72,5 +72,10 @@ export default {
       password
     })
     return response.data
-  }
+  },
+
+  async crearSustituto(idProfesorOriginal, profesorData) {
+    const response = await api.post(`/profesores/${idProfesorOriginal}/sustituto`, profesorData)
+    return response.data
+  },
 }

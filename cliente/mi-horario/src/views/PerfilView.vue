@@ -44,7 +44,7 @@
             v-model="passwordActual" 
             type="password" 
             class="form-control" 
-            placeholder="INtroduce tu contraseña actual" 
+            placeholder="Introduce tu contraseña actual" 
           />
         </div>
 
