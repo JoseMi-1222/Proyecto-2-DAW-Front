@@ -45,5 +45,10 @@ export default {
         }
         
         return api.patch('/ausencias/justificar-dia', payload).then(res => res.data);
-    }
+    },
+
+  async obtenerGuardiasDeHoy() {
+    const response = await api.get('/ausencias/guardias/hoy'); // Asegúrate de que la ruta coincide con tu AuthController/AusenciaController
+    return response.data;
+  }
 };

@@ -9,6 +9,7 @@ import AusenciasProfesorView from '../views/AusenciasProfesorView.vue'
 import DatosUsuarioView from '../views/DatosUsuarioView.vue'
 import AusenciasAdminView from '../views/AusenciasAdminView.vue'
 import GestionDatosView from '../views/GestionDatosView.vue' 
+import PanelGuardiasView from '../views/PanelGuardiasView.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -16,14 +17,12 @@ const routes = [
   { path: '/home', component: HomeView },
   { path: '/perfil', component: PerfilView },
   
-  // --- GESTIÓN DE PROFESORES (Protegida) ---
   { 
     path: '/datos-profesorado', 
     component: DatosProfesoradoView,
     meta: { requireAdmin: true } 
   },
 
-  // --- NUEVA RUTA: IMPORTAR/EXPORTAR DATOS (Protegida) ---
   { 
     path: '/gestion-datos', 
     component: GestionDatosView,
@@ -34,11 +33,16 @@ const routes = [
   { path: '/formulario/:id', component: FormularioUsuarioView },
   { path: '/mis-ausencias', component: AusenciasProfesorView },
   { path: '/datosusuario/:id', component: DatosUsuarioView },
-  
-  // --- PANEL ADMIN AUSENCIAS (Protegida) ---
+
   { 
     path: '/admin/ausencias', 
     component: AusenciasAdminView,
+    meta: { requireAdmin: true } 
+  },
+
+  { 
+    path: '/guardias', 
+    component: PanelGuardiasView,
     meta: { requireAdmin: true } 
   },
 

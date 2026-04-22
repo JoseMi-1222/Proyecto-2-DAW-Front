@@ -81,9 +81,13 @@
 
         <div v-if="esAdmin" class="mt-3 border-top border-secondary pt-3">
            <small class="text-muted text-uppercase fw-bold ms-2 mb-2 d-block">Administración</small>
+
+           <button class="btn btn-menu text-start text-danger fw-bold bg-danger bg-opacity-10" @click="navegar('/guardias')">
+             <span class="me-2">🚨</span> Panel de Guardias
+           </button>
            
            <button class="btn btn-menu text-start text-warning" @click="navegar('/admin/ausencias')">
-             <span class="me-2">🛡️</span> Control Global Ausencias
+             <span class="me-2">🛡️</span> Gestion de Ausencias
            </button>
 
            <button class="btn btn-menu text-start" @click="navegar('/datos-profesorado')">
