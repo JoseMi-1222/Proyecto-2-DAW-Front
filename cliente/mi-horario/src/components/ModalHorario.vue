@@ -295,25 +295,23 @@ const confirmarEdicionCelda = () => {
   })
   
   if (asignaturaSeleccionada.value) {
-    const [hTabla, mTabla] = franja.inicio.split(':').map(Number)
-    
-    const entradaExistente = horarioActual.value.find(h => {
-        let hBack, mBack
-        const val = h.franja.horaInicio
-        if (Array.isArray(val)) { hBack=val[0]; mBack=val[1]; }
-        else if (typeof val==='string') { const p=val.split(':'); hBack=Number(p[0]); mBack=Number(p[1]); }
-        return hBack === hTabla && mBack === mTabla
-    })
-    
-    const franjaObjeto = entradaExistente ? entradaExistente.franja : { idFranja: franja.id, horaInicio: franja.inicio }
+    let diaOriginal = "";
+    for (const [letra, diaIngles] of Object.entries(mapaDias)) {
+       if (t(`schedule.days.${diaIngles}`) === dia) {
+           diaOriginal = letra;
+           break;
+       }
+    }
+    if (!diaOriginal) diaOriginal = dia;
 
     horarioActual.value.push({
-      dia: dia, 
-      franja: franjaObjeto,
-      asignatura: asignaturaSeleccionada.value,
+      dia: diaOriginal, 
+      franja: { idFranja: franja.id, horaInicio: franja.inicio }, 
+      asignatura: asignaturaSeleccionada.value, 
       profesor: { idProfesor: props.profesor.idProfesor }, 
-      curso: cursoSeleccionado.value
-    })
+      curso: cursoSeleccionado.value,
+      aula: null
+    });
   }
   
   cerrarEdicionCelda()
@@ -322,7 +320,19 @@ const confirmarEdicionCelda = () => {
 const guardarCambios = async () => {
   guardando.value = true
   try {
-    await horarioService.guardarHorario(props.profesor.idProfesor, horarioActual.value)
+    
+    const horarioDTOParaBackend = horarioActual.value.map(h => {
+      return {
+        dia: h.dia,
+        idFranja: h.franja?.idFranja || h.franja?.id, 
+        idAsignatura: h.asignatura?.idAsignatura || h.asignatura?.id,
+        idProfesor: h.profesor?.idProfesor || h.profesor?.id,
+        idCurso: h.curso?.idCurso || h.curso?.id || null,
+        idAula: h.aula?.idAula || h.aula?.id || null
+      }
+    });
+
+    await horarioService.guardarHorario(props.profesor.idProfesor, horarioDTOParaBackend)
     emit('guardar-exito', t('scheduleModal.updatedSuccessfully'))
     emit('cerrar')
   } catch (e) {
