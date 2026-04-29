@@ -388,3 +388,7 @@ Para lanzarlo solo tenemos que poner **npm install** y luego **npm run dev**
 - Functionality to export data from the system
 
 To launch it, you just need to **run npm install** and then **npm run dev**.
+
+
+
+By Jose Miguel and Juan Antonio 2ºDAW
