@@ -191,12 +191,13 @@ La rama **fixed** representa una evolución significativa del proyecto con:
 - **Código más limpio**: Refactorización de componentes legacy
 
 Esta rama está lista para ser considerada como una versión mejorada y más completa del sistema.
+Para lanzarlo solo tenemos que poner **npm install** y luego **npm run dev**
 
----
+---------------------------------------------------------------------------------------------------------
 
 # Summary of Changes between Main and Fixed Branches
 
-## Date: February 4, 2026
+## Date: 29/04/2026
 
 ---
 
@@ -385,3 +386,5 @@ Esta rama está lista para ser considerada como una versión mejorada y más com
 - New view dedicated to data management
 - Functionality to import data into the system
 - Functionality to export data from the system
+
+To launch it, you just need to **run npm install** and then **npm run dev**.
