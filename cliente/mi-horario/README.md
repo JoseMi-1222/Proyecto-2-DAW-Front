@@ -392,3 +392,116 @@ To launch it, you just need to **run npm install** and then **npm run dev**.
 
 
 By Jose Miguel and Juan Antonio 2ºDAW
+
+Despliegue en VPS
+
+
+1. Gestión de Contenedores (Docker)
+  Este es el método principal para lanzar todo el sistema (Frontend, Backend y Certbot) de forma unificada.
+
+   * docker-compose up --build -d
+       * Qué hace:
+           1. --build: Obliga a reconstruir las imágenes de Docker del Frontend y Backend (ejecutando internamente mvn
+              package y npm run build).
+           2. up: Crea e inicia los contenedores definidos en docker-compose.yml.
+           3. -d: Ejecuta los contenedores en segundo plano (modo detached).
+   * docker-compose down
+       * Qué hace: Detiene y elimina los contenedores, redes y volúmenes creados por el proyecto.
+
+  2. Backend (Java / Spring Boot)
+  Ubicado en Proyecto-2-DAW-Back/servidor/app-horario/.
+
+   * ./mvnw clean package -DskipTests (Ejecutado automáticamente dentro de Docker)
+       * Qué hace: Limpia compilaciones anteriores (clean), compila el código y genera un archivo .jar ejecutable en la
+         carpeta target/. Omite los tests para acelerar el proceso.
+   * java -jar target/*.jar
+       * Qué hace: Lanza la aplicación Spring Boot directamente si tienes Java instalado localmente (puerto 8081).
+
+  3. Frontend (Vue.js / Vite)
+  Ubicado en Proyecto-2-DAW-Front/cliente/mi-horario/.
+
+   * npm install (Ejecutado automáticamente dentro de Docker)
+       * Qué hace: Descarga todas las dependencias necesarias definidas en package.json.
+   * npm run build (Ejecutado automáticamente dentro de Docker)
+       * Qué hace: Compila y optimiza la aplicación para producción, generando archivos estáticos (HTML, JS, CSS) en la
+         carpeta dist/.
+   * npm run dev (Para desarrollo local sin Docker)
+       * Qué hace: Inicia un servidor de desarrollo con hot-reload (recarga automática) para ver los cambios en tiempo
+         real.
+
+  4. Configuración de Red (Importante)
+  El archivo docker-compose.yml indica que el proyecto depende de una red externa llamada mi-proyecto_default.
+
+   * docker network create mi-proyecto_default
+       * Qué hace: Crea manualmente la red virtual necesaria para que los contenedores puedan comunicarse entre sí si no
+         existe previamente.
+
+  Resumen del Flujo de Lanzamiento:
+   1. Construcción del Backend: Maven descarga dependencias y crea el JAR.
+   2. Construcción del Frontend: Node genera los archivos de producción.
+   3. Despliegue Web: Nginx sirve el Frontend en el puerto 3000 (HTTP) y 443 (HTTPS).
+   4. Despliegue API: El Backend arranca en el puerto 8081.
+   5. Seguridad: Certbot se encarga de la renovación de certificados SSL cada 12 horas.
+
+
+------------------------------------------------------------------------------------------------------
+1. Container Management (Docker)
+This is the primary method for launching the entire system (Frontend, Backend, and Certbot) in a unified way.
+
+docker-compose up --build -d
+
+What it does:
+
+--build: Forces the rebuilding of Docker images for the Frontend and Backend (internally executing mvn package and npm run build).
+
+up: Creates and starts the containers defined in docker-compose.yml.
+
+-d: Runs the containers in the background (detached mode).
+
+docker-compose down
+
+What it does: Stops and removes the containers, networks, and volumes created by the project.
+
+2. Backend (Java / Spring Boot)
+Located in Proyecto-2-DAW-Back/servidor/app-horario/.
+
+./mvnw clean package -DskipTests (Executed automatically within Docker)
+
+What it does: Clears previous builds (clean), compiles the code, and generates an executable .jar file in the target/ folder. It skips tests to speed up the process.
+
+java -jar target/*.jar
+
+What it does: Launches the Spring Boot application directly if you have Java installed locally (port 8081).
+
+3. Frontend (Vue.js / Vite)
+Located in Proyecto-2-DAW-Front/cliente/mi-horario/.
+
+npm install (Executed automatically within Docker)
+
+What it does: Downloads all necessary dependencies defined in package.json.
+
+npm run build (Executed automatically within Docker)
+
+What it does: Compiles and optimizes the application for production, generating static files (HTML, JS, CSS) in the dist/ folder.
+
+npm run dev (For local development without Docker)
+
+What it does: Starts a development server with hot-reload to see changes in real-time.
+
+4. Network Configuration (Important)
+The docker-compose.yml file indicates that the project depends on an external network named mi-proyecto_default.
+
+docker network create mi-proyecto_default
+
+What it does: Manually creates the necessary virtual network so that containers can communicate with each other if it does not already exist.
+
+Launch Workflow Summary
+Backend Build: Maven downloads dependencies and creates the JAR file.
+
+Frontend Build: Node generates the production files.
+
+Web Deployment: Nginx serves the Frontend on port 3000 (HTTP) and 443 (HTTPS).
+
+API Deployment: The Backend starts on port 8081.
+
+Security: Certbot handles SSL certificate renewal every 12 hours.
